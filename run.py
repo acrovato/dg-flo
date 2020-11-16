@@ -49,38 +49,46 @@ class DupStream:
         self.stream1.flush()
         self.stream2.flush()
 
-def setup():
+def setup(fpath):
     '''Perform basic setup
     '''
-    import sys, os, argparse
-    # Parse cl arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('file', help='path to python script to be run')
-    args = parser.parse_args()
+    import sys, os
     # Fix paths
     sys.path.append(os.path.dirname(os.path.realpath(__file__))) # adds "." to the python path
-    # check input filepath
-    fpath = os.path.abspath(args.file)
-    if not os.path.isfile(fpath):
-        raise Exception('file not found: ', fpath)
-    # create workspace directory
-    wdir = os.path.join(os.getcwd(), 'workspace', os.path.basename(os.path.realpath(fpath))[:-3])
+    # check input path and create workspace directory(ies)
+    files = {}
+    fpath = os.path.abspath(fpath)
+    if os.path.isfile(fpath):
+        wdir = onedir(fpath)
+        files[fpath] = wdir
+    elif os.path.isdir(fpath):
+        for file in os.listdir(fpath):
+            file = os.path.join(fpath, file)
+            wdir = onedir(file)
+            files[file] = wdir
+    else:
+        raise Exception('file or folder not found: ', fpath)
+    return files, os.getcwd()
+
+def parse():
+    '''Parse command line arguments
+    '''
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('f', help='path to python script(s) to be run, can be a file or a folder')
+    return parser.parse_args()
+
+def onedir(file):
+    '''Create a single workspace directory per script, if needed
+    '''
+    import os
+    common = os.path.commonprefix((file, os.getcwd())) + os.sep
+    resdir = file[len(common):].replace(os.sep,'_')
+    wdir = os.path.join(os.getcwd(), 'workspace', resdir[:-3])
     if not os.path.isdir(wdir):
         print('creating', wdir)
         os.makedirs(wdir)
-    print('changing to workspace: ', wdir)
-    os.chdir(wdir)
-    return fpath
-    
-def recStart():
-    import sys
-    sys.stdout = open("stdout.txt", "w")
-    sys.stderr = open("stderr.txt", "w")
-
-def recStop():
-    import sys
-    sys.stdout.close()
-    sys.stderr.close()
+    return wdir
 
 def printStart():
     import time, socket
@@ -99,16 +107,22 @@ def printEnd():
     print('*' * 80)
 
 def main():
-    # start
-    fpath = setup()
-    logger = Log()
-    printStart()
+    import os
+    # init
+    args = parse()
+    files, thisdir = setup(args.f)
     # run
-    global __file__
-    __file__ = fpath # so that latter calls to __file__ will reference the script referenced by fpath
-    exec(open(fpath, 'r', encoding='utf8').read(), globals(), globals())
-    # end
-    printEnd()
+    for file, wdir in files.items():
+        print('changing to workspace: ', wdir)
+        os.chdir(wdir)
+        logger = Log()
+        printStart()
+        global __file__
+        __file__ = file # so that latter calls to __file__ will reference the script referenced by file
+        exec(open(file, 'r', encoding='utf8').read(), globals(), globals())
+        printEnd()
+        os.chdir(thisdir)
+        del logger
 
 if __name__ == "__main__":
     main()

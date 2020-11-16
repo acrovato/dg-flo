@@ -21,4 +21,4 @@ jobs:
         pip install numpy
     - name: Test
       run: |
-        python run.py tests/mshio.py
+        python run.py tests/

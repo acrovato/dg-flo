@@ -52,6 +52,8 @@ class Cell:
 
 # 1D line
 class Line(Cell):
+    '''Line cell, made of 2 nodes
+    '''
     def __init__(self, no, nodes):
         Cell.__init__(self, no, nodes)
 

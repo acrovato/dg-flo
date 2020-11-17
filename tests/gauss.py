@@ -18,17 +18,24 @@
 ## Gauss-Legendre quadrature test
 # Adrien Crovato
 #
-# Test the Gauss-Legendre quadrature for a polynomial of order 9 (n = 5)
+# Test the Gauss-Legendre quadrature for order 4 (n = 5)
 
 import fe.quadrature as quad
 
 def main():
     # Create a Gauss-Legendre quadrature rule
-    gauss = quad.GaussLegendre(9)
-    print(gauss)
+    gl = quad.GaussLegendre(4)
+    print(gl)
     # Check roots and weights
-    print(gauss.x)
-    print(gauss.w)
+    print(gl.x)
+    print(gl.w)
+    
+    # Create a Gauss-Legendre-Lobatto quadrature rule
+    gll = quad.GaussLegendreLobatto(4)
+    print(gll)
+    # Check roots and weights
+    print(gll.x)
+    print(gll.w)
 
 if __name__=="__main__":
     main()

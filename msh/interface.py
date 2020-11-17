@@ -70,8 +70,10 @@ class Interface:
     def type(self):
         return ITYPE.UNK
 
-# 0D vertex (interface between two 1D lines)
+# 0D vertex
 class Vertex(Interface):
+    '''Vertex interface between two Line cells
+    '''
     def __init__(self, nodes):
         Interface.__init__(self, nodes)
 

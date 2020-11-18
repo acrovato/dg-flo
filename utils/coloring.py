@@ -15,22 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## mesh node
+## Colors
 # Adrien Crovato
 
-import numpy as np
+def red(_str):
+    return '\x1b[1;31m' + _str + '\x1b[0m'
 
-class Node:
-    def __init__(self, no, pos):
-        # Node number
-        self.no = no
-        # Node position
-        if isinstance(pos, list) and len(pos) == 3: # python list
-            self.pos = np.transpose(np.array(pos))
-        elif isinstance(pos, np.ndarray) and pos.shape == (3, 1): # numpy array
-            self.pos = pos
-        else:
-            raise RuntimeError('Node: no default constructor matches the argument list!\n')
+def green(_str):
+    return '\x1b[1;32m' + _str + '\x1b[0m'
 
-    def __str__(self):
-        return 'node #' + str(self.no) + ', position: ' + str(np.transpose(self.pos))
+def yellow(_str):
+    return '\x1b[1;33m' + _str + '\x1b[0m'
+
+def blue(_str):
+    return '\x1b[1;34m' + _str + '\x1b[0m'

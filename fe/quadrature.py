@@ -37,8 +37,12 @@ class GaussLegendre(Quadrature):
        ref https://rosettacode.org/wiki/Numerical_integration/Gauss-Legendre_Quadrature#Python
     '''
     def __init__(self, order):
+        # Sanity check
+        if order < 1:
+            raise RuntimeError('GaussLegendre quadrature rules not defined for order less than 1!')
         Quadrature.__init__(self)
         self.n = order + 1
+        # Evaluate roots and weights
         lgd = polys.Legendre()
         self.__roots(lgd)
         self.__weights(lgd)
@@ -79,8 +83,12 @@ class GaussLegendreLobatto(Quadrature):
        ref https://www.ams.org/journals/mcom/1963-17-083/S0025-5718-1963-0158540-4/S0025-5718-1963-0158540-4.pdf
     '''
     def __init__(self, order):
+        # Sanity check
+        if order < 1:
+            raise RuntimeError('GaussLegendreLobatto quadrature rules not defined for order less than 1!')
         Quadrature.__init__(self)
         self.n = order + 1
+        # Evaluate roots and weights
         lgd = polys.Legendre()
         self.__roots(lgd)
         self.__weights(lgd)
@@ -90,8 +98,6 @@ class GaussLegendreLobatto(Quadrature):
     def __roots(self, lgd):
         '''Evaluate roots
         '''
-        if self.n < 3:
-            raise RuntimeError('GaussLegendreLobatto quadrature rules not defined for less than order 2!')
         xs = [1.0] # roots are symmetric and always include the bounds, so we only compute half of them
         for i in range(1, self.n // 2):
             x = np.cos(np.pi * i / (self.n-1))
@@ -100,7 +106,6 @@ class GaussLegendreLobatto(Quadrature):
             while np.abs(dx) > 1e-16:
                 dx = - lgd.evald(x, self.n-1) / lgd.evaldd(x, self.n-1)
                 x += dx
-                #print(x)
                 its += 1
                 if its > 100:
                     print('GaussLegendreLobatto: Newton method did not converge, error =', np.abs(dx))

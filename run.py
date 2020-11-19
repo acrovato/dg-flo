@@ -76,6 +76,7 @@ def parse():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('f', help='path to python script(s) to be run, can be a file or a folder')
+    parser.add_argument('--gui', help='enable graphical output', action='store_true')
     return parser.parse_args()
 
 def onedir(file):

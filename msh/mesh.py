@@ -19,8 +19,8 @@
 # Adrien Crovato
 
 import numpy as np
-import msh.cell as cell
-import msh.interface as intf
+from msh.cell import CTYPE
+from msh.interface import Vertex
 
 class Mesh:
     def __init__(self):
@@ -58,10 +58,10 @@ class Mesh:
             nrm = [-1.0, 1.0]
             for c in self.cells:
                 # Treat only 1D line cells
-                if c.type() != cell.CTYPE.LINE2:
+                if c.type() != CTYPE.LINE2:
                     continue
                 for i, n in enumerate(c.nodes):
-                    trial = intf.Vertex([n])
+                    trial = Vertex([n])
                     # create the interface
                     if trial not in interfaces:
                         v = trial

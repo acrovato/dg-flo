@@ -56,7 +56,7 @@ class Interface:
     def __eq__(self, other):
         '''Determine if two interfaces are the same
         '''
-        cnt = 0;
+        cnt = 0
         # Compare nodes of self to nodes of other
         for i in range(len(self.nodes)):
             for n1 in other.nodes:

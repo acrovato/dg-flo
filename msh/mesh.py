@@ -28,16 +28,35 @@ class Mesh:
         self.dim = 0 # dimension
         self.nodes = [] # list of nodes
         self.cells = [] # list of cells
+        self.groups= [] # list of groups
         self.interfaces = [] # list of interfaces
 
     def __str__(self):
-        msg = 'Mesh \"' + self.name + '\" with:\n'
-        for n in self.nodes:
-            msg += '- ' + str(n) + '\n'
+        # count cell and interface types
+        ctyps = {}
+        ityps = {}
         for c in self.cells:
-            msg += '- ' + str(c) + '\n'
+            if c.type() not in ctyps:
+                ctyps[c.type()] = 1
+            else:
+                ctyps[c.type()] += 1
         for i in self.interfaces:
-            msg += '- ' + str(i) + '\n'
+            if i.type() not in ityps:
+                ityps[i.type()] = 1
+            else:
+                ityps[i.type()] += 1
+        # Print
+        msg = 'Mesh \"' + self.name + '\" (' + str(self.dim) + 'D) with:\n'
+        msg += '- ' + str(len(self.nodes)) + ' nodes\n'
+        msg += '- ' + str(len(self.cells)) + ' cells ( '
+        for typ, cnt in ctyps.items():
+            msg += str(cnt) + ' ' + str(typ) + ' '
+        msg += ')\n'
+        msg += '- ' + str(len(self.interfaces)) + ' interfaces ('
+        for typ, cnt in ityps.items():
+            msg += str(cnt) + ' ' + str(typ) + ' '
+        msg += ')\n'
+        msg += '- ' + str(len(self.groups)) + ' groups'
         return msg
 
     def topology(self):
@@ -45,9 +64,17 @@ class Mesh:
         '''
         # Sanity checks
         if len(self.nodes) == 0 or len(self.cells) == 0:
-            raise RuntimeError('Mesh.topology cannot update topology: no nodes or cells in the mesh!\n')
+            raise RuntimeError('Mesh.topology cannot update topology: no nodes or cells in the mesh!')
         # Update interfaces
         self.__interfaces()
+        # Update groups
+        cnt = 0
+        for g in self.groups:
+            if g.dim == self.dim:
+                cnt += 1
+            g.update(self)
+        if cnt != 1:
+            raise RuntimeError('Mesh.topology the mesh should contain only one group having the same dimension as the mesh!')
 
     def __interfaces(self):
         '''Create the interfaces between all cells having the mesh dimension
@@ -79,5 +106,5 @@ class Mesh:
                     v.neighbors.append(c)
                     c.boundaries.append(v)
         else:
-            raise RuntimeError('Mesh.__interfaces not implemented for dimensions > 1!\n')
+            raise RuntimeError('Mesh.__interfaces not implemented for dimensions > 1!')
         self.interfaces = list(interfaces)

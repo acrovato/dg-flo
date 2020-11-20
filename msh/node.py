@@ -30,7 +30,7 @@ class Node:
         elif isinstance(pos, np.ndarray) and pos.shape == (3, 1): # numpy array
             self.pos = pos
         else:
-            raise RuntimeError('Node: no default constructor matches the argument list!\n')
+            raise RuntimeError('Node: no default constructor matches the argument list!')
 
     def __str__(self):
         return 'node #' + str(self.no) + ', position: ' + str(np.transpose(self.pos))

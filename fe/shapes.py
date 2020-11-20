@@ -29,7 +29,7 @@ class Shapes:
         self.phi = [] # shape functions
         self.dphi = [] # derivatives of shape functions
     def __str__(self):
-        return 'Shape function not implemented\n'
+        raise RuntimeError('Shape function not implemented!')
 
 # Lagrange
 class Lagrange(Shapes):
@@ -41,7 +41,7 @@ class Lagrange(Shapes):
         self.__eval(x, xi)
         self.__evald(x, xi)
     def __str__(self):
-        return 'Lagrange shape functions (n = ' + str(self.n) + ')\n'
+        return 'Lagrange shape functions (n = ' + str(self.n) + ')'
 
     def __eval(self, x, xi):
         '''Evaluate polynomials at x using interpolation points xi

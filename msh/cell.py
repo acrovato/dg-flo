@@ -20,17 +20,21 @@
 
 from enum import Enum
 import numpy as np
+from fe.shapes import Lagrange
 
 # Cell type
 class CTYPE(Enum):
     UNK = 0,
-    LINE2 = 1
+    LINE2 = 1,
+    POINT1 = 15
 
     def __str__(self):
         if self == CTYPE.UNK:
             return 'UNKNOWN'
         elif self == CTYPE.LINE2:
             return 'LINE'
+        elif self == CTYPE.POINT1:
+            return 'POINT'
 
 # Base class
 class Cell:
@@ -38,6 +42,9 @@ class Cell:
         self.no = no # cell number
         self.nodes = nodes # list of nodes of the cell
         self.boundaries = [] # list of boundaries of the cell
+        self.jac = [] # list of Jacobian matrices (at integration points)
+        self.ijac = [] # list of inverse Jacobian matrices (at integration points)
+        self.djac = [] # list of Jacobian determinants (at integration points)
     def __str__(self):
         msg = 'cell #' + str(self.no) + ' (' + str(self.type()) + '), nodes:'
         for n in self.nodes:
@@ -59,3 +66,27 @@ class Line(Cell):
 
     def type(self):
         return CTYPE.LINE2
+
+    def update(self, xi):
+        '''Update members depending on the integration points (non-geometric data)
+        '''
+        # Compute Jacobian at integration points xi using classical linear shape functions
+        self.jac = [np.zeros((1,1))] * len(xi)
+        self.ijac = [np.zeros((1,1))] * len(xi)
+        self.djac = [0.] * len(xi)
+        dphi = Lagrange(xi, [-1, 1]).dphi
+        for k in range(len(xi)):
+            for i in range(len(self.nodes)):
+                self.jac[k][0, 0] += dphi[k][i, 0] * self.nodes[i].pos[0]
+            self.ijac[k] = np.linalg.inv(self.jac[k]) # inverse: 1/j
+            self.djac[k] = np.linalg.det(self.jac[k]) # dtm: j
+
+# 0D point
+class Point(Cell):
+    '''Point cell, made of 1 node
+    '''
+    def __init__(self, no, nodes):
+        Cell.__init__(self, no, nodes)
+
+    def type(self):
+        return CTYPE.POINT1

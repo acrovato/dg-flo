@@ -21,6 +21,7 @@
 import msh.mesh as mesh
 import msh.node as node
 import msh.cell as cell
+import msh.group as group
 
 def run(n):
     '''Create a 1D (line) domain of unit length and divide it in n cells
@@ -31,14 +32,24 @@ def run(n):
     cels = []
     for i in range(n+1):
         nods.append(node.Node(i+1, [i*1/n, 0, 0]))
+    cels.append(cell.Point(1, [nods[0]]))
+    cels.append(cell.Point(2, [nods[-1]]))
     for i in range(n):
-        cels.append(cell.Line(i+1, [nods[i], nods[i+1]]))
+        cels.append(cell.Line(i+3, [nods[i], nods[i+1]]))
+    # Create groups
+    fld = group.Group('field', 1)
+    fld.cells = cels[-n:]
+    inl = group.Group('inlet', 0)
+    inl.cells = [cels[0]]
+    oul = group.Group('outlet', 0)
+    oul.cells = [cels[1]]
     # Create the mesh
     msh = mesh.Mesh()
     msh.name = '1dline'
     msh.dim = 1
     msh.nodes = nods
     msh.cells = cels
-    msh.topology() # creates the mesh topology
+    msh.groups = [fld, inl, oul]
+    msh.topology() # create the mesh topology
     print(' done!')
     return msh

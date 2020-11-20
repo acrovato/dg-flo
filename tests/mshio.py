@@ -27,6 +27,19 @@ def main():
     msh = lmesh.run(3)
     # Display mesh info
     print(msh)
+    # Display specif infos for each attribute of the mesh
+    print('Nodes:')
+    for a in msh.nodes:
+        print(a)
+    print('Cells:')
+    for a in msh.cells:
+        print(a)
+    print('Interfaces:')
+    for a in msh.interfaces:
+        print(a)
+    print('Groups:')
+    for a in msh.groups:
+        print(a)
 
 if __name__=="__main__":
     main()

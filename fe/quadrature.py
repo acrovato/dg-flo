@@ -67,7 +67,7 @@ class Quadrature:
         self.x = [] # position
         self.w = [] # weight
     def __str__(self):
-        return 'Quadrature rule not implemented\n'
+        raise RuntimeError('Quadrature rule not implemented!')
 
 # Gauss-Legendre
 class GaussLegendre(Quadrature):
@@ -85,7 +85,7 @@ class GaussLegendre(Quadrature):
         self.__roots(lgd)
         self.__weights(lgd)
     def __str__(self):
-        return 'Gauss-Legendre quadrature rule (n = ' + str(self.n) + ')\n'
+        return 'Gauss-Legendre quadrature rule (n = ' + str(self.n) + ')'
 
     def __roots(self, lgd):
         '''Evaluate roots
@@ -131,7 +131,7 @@ class GaussLegendreLobatto(Quadrature):
         self.__roots(lgd)
         self.__weights(lgd)
     def __str__(self):
-        return 'Gauss-Legendre-Lobatto quadrature rule (n = ' + str(self.n) + ')\n'
+        return 'Gauss-Legendre-Lobatto quadrature rule (n = ' + str(self.n) + ')'
 
     def __roots(self, lgd):
         '''Evaluate roots

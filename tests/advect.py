@@ -27,7 +27,6 @@ import advection.discretization as advd
 import num.tintegration as numt
 import utils.lmesh as lmsh
 import utils.testing as tst
-import utils.gui as gui
 
 from fe.quadrature import GaussLegendreLobatto # TODO
 
@@ -77,6 +76,7 @@ def main(gui):
 
 if __name__=="__main__":
     if parse().gui:
+        import utils.gui as gui
         main(gui.Gui())
         input('<ENTER TO QUIT>')
     else:

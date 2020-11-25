@@ -25,7 +25,7 @@ import numpy as np
 # Base class
 class Shapes:
     def __init__(self):
-        self.n = 0 # number of quadrature points
+        self.n = 0 # number of sampling points
         self.phi = [] # shape functions
         self.dphi = [] # derivatives of shape functions
     def __str__(self):

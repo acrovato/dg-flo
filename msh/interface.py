@@ -37,6 +37,7 @@ class Interface:
     def __init__(self, nodes):
         self.no = 0 # interface number
         self.nodes = nodes # list of nodes defining the interface
+        self.normal = np.zeros(3) # interface normal
         self.neighbors = [] # list of interface neighbor (left and right) cells
     def __str__(self):
         msg = 'interface #' + str(self.no) + ' (' + str(self.type()) + '), nodes:'

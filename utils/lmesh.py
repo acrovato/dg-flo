@@ -23,15 +23,15 @@ import msh.node as node
 import msh.cell as cell
 import msh.group as group
 
-def run(n):
-    '''Create a 1D (line) domain of unit length and divide it in n cells
+def run(l, n):
+    '''Create a 1D (line) domain of length l and divide it in n cells
     '''
     # Create nodes and elements
     print('Creating 1D line mesh...', end='')
     nods = []
     cels = []
     for i in range(n+1):
-        nods.append(node.Node(i+1, [i*1/n, 0, 0]))
+        nods.append(node.Node(i+1, [i*l/n, 0, 0]))
     cels.append(cell.Point(1, [nods[0]]))
     cels.append(cell.Point(2, [nods[-1]]))
     for i in range(n):

@@ -46,7 +46,7 @@ class Group:
         for typ, cnt in ctyps.items():
             msg += str(cnt) + ' ' + str(typ) + ' '
         msg += ')\n'
-        msg += '- ' + str(len(self.interfaces)) + ' interfaces ('
+        msg += '- ' + str(len(self.interfaces)) + ' interfaces ( '
         for typ, cnt in ityps.items():
             msg += str(cnt) + ' ' + str(typ) + ' '
         msg += ')'

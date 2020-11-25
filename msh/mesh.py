@@ -93,7 +93,7 @@ class Mesh:
                     if trial not in interfaces:
                         v = trial
                         v.no = len(interfaces) + 1
-                        v.nrm = np.transpose(np.array([nrm[i], 0., 0.]))
+                        v.normal = np.array([nrm[i], 0., 0.])
                         interfaces.add(v)
                     # loop until interface is found
                     else:

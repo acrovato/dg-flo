@@ -76,8 +76,10 @@ class Line(Cell):
         self.djac = [0.] * len(xi)
         dphi = Lagrange(xi, [-1, 1]).dphi
         for k in range(len(xi)):
+            jac = np.zeros((1,1))
             for i in range(len(self.nodes)):
-                self.jac[k][0, 0] += dphi[k][i, 0] * self.nodes[i].pos[0]
+                jac[0,0] += dphi[k][i, 0] * self.nodes[i].pos[0]
+            self.jac[k] = jac
             self.ijac[k] = np.linalg.inv(self.jac[k]) # inverse: 1/j
             self.djac[k] = np.linalg.det(self.jac[k]) # dtm: j
 

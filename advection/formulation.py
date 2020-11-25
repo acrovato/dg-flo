@@ -15,31 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Mesh test
+## Formulation of the advection equation in one dimension
 # Adrien Crovato
-#
-# Test the 1D mesh creation and reading
 
-import utils.lmesh as lmesh
-
-def main():
-    # Create a 1D line mesh with 3 cells
-    msh = lmesh.run(1, 3)
-    # Display mesh info
-    print(msh)
-    # Display specif infos for each attribute of the mesh
-    print('Nodes:')
-    for a in msh.nodes:
-        print(a)
-    print('Cells:')
-    for a in msh.cells:
-        print(a)
-    print('Interfaces:')
-    for a in msh.interfaces:
-        print(a)
-    print('Groups:')
-    for a in msh.groups:
-        print(a)
-
-if __name__=="__main__":
-    main()
+class Formulation:
+    '''Formulate the 1D advection equation
+        du/dt + a * du/dx = 0
+    '''
+    def __init__(self, msh, fld, ic, bc, a):
+        # Grid
+        self.msh = msh # mesh
+        self.field = fld # field
+        self.ic = ic # initial condition
+        self.bc = bc # inlet boundary condition
+        # Physics
+        self.a = a # advection velocity
+    def __str__(self):
+        return 'Advection formulation'

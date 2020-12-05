@@ -20,7 +20,6 @@
 # TODO these classes should be more general
 
 import numpy as np
-from fe.quadrature import GaussLegendreLobatto # TODO
 
 class Initial:
     '''Initial condition
@@ -33,12 +32,10 @@ class Initial:
     def eval(self, celements):
         '''Evaluate the initial conditon on the nodes of the elements
         '''
-        # TODO make an element.evalx method
         u = []
         for c,e in celements.items():
-            xe = GaussLegendreLobatto(e.order).x
+            xe = e.evalx()
             for i in range(len(xe)):
-                xe[i] = (xe[i] + 1) * (c.nodes[1].pos[0] - c.nodes[0].pos[0]) / 2 + c.nodes[0].pos[0]
                 ue = self.fun(xe[i], 0)
                 u.append(ue)
         return u
@@ -51,11 +48,11 @@ class Dirichlet:
     def __str__(self):
         return 'Boundary condition'
 
-    def eval(self, interface, t):
+    def eval(self, element, interface, t):
         '''Evaluate the dirichlet boundary conditon on the interface
         '''
-        # TODO from interface find positions (need integration points and nodes)
         u = []
-        for n in interface.nodes:
-            u.append(self.fun(n.pos[0], t))
+        x = element.evalx(interface)
+        for i in range(len(x)):
+            u.append(self.fun(x[i], t))
         return u

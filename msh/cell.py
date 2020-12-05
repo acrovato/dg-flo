@@ -41,6 +41,10 @@ class Cell:
     def __init__(self, no, nodes):
         self.no = no # cell number
         self.nodes = nodes # list of nodes of the cell
+        self.cg = np.zeros(3) # cell centroid
+        for n in self.nodes:
+            self.cg += n.x
+        self.cg /= len(nodes)
         self.boundaries = [] # list of boundaries of the cell
         self.jac = [] # list of Jacobian matrices (at integration points)
         self.ijac = [] # list of inverse Jacobian matrices (at integration points)
@@ -74,11 +78,11 @@ class Line(Cell):
         self.jac = [np.zeros((1,1))] * len(xi)
         self.ijac = [np.zeros((1,1))] * len(xi)
         self.djac = [0.] * len(xi)
-        dphi = Lagrange(xi, [-1, 1]).dphi
+        dn = Lagrange(xi, [-1, 1]).dsf
         for k in range(len(xi)):
             jac = np.zeros((1,1))
             for i in range(len(self.nodes)):
-                jac[0,0] += dphi[k][i, 0] * self.nodes[i].pos[0]
+                jac[0,0] += dn[k][0, i] * self.nodes[i].x[0]
             self.jac[k] = jac
             self.ijac[k] = np.linalg.inv(self.jac[k]) # inverse: 1/j
             self.djac[k] = np.linalg.det(self.jac[k]) # dtm: j

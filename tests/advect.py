@@ -28,11 +28,9 @@ import num.tintegration as numt
 import utils.lmesh as lmsh
 import utils.testing as tst
 
-from fe.quadrature import GaussLegendreLobatto # TODO
-
 def main(gui):
     # Constants
-    l = 10. # domain length
+    l = 10 # domain length
     a = 3. # advection velocity
     n = 3 # number of elements
     p = 4 # order of discretization
@@ -42,7 +40,7 @@ def main(gui):
     def initial(x, t): return 0.0
     def fun(x, t): return np.sin(2*np.pi*(x-a*t)/l*2)
     if gui:
-        gui.fexact = fun
+        gui.fref = fun
     # Parameters
     dx = l / n # cell length
     dt = cfl * dx / a # time step
@@ -62,11 +60,10 @@ def main(gui):
     tint.run(dt, tmax)
 
     # Test
-    uexact = [] # TODO change method to generate interpolation point (element.evalx?)
+    uexact = [] # exact solution at element eval point
     for c,e in disc.elements.items():
-        xe = GaussLegendreLobatto(e.order).x
+        xe = e.evalx()
         for i in range(len(xe)):
-            xe[i] = (xe[i] + 1) * (c.nodes[1].pos[0] - c.nodes[0].pos[0]) / 2 + c.nodes[0].pos[0]
             ue = fun(xe[i], tmax)
             uexact.append(ue)
     maxdiff = np.abs(np.max(tint.u - np.array(uexact)))

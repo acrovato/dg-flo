@@ -39,7 +39,7 @@ class Discretization:
         self.elements = {} # cell to element map
         for i, c in enumerate(self.frm.field.cells):
             rows = list(range(i*(order+1), (i+1)*(order+1))) # unknown rows in global solution list
-            self.elements[c] = Element(rows, c, order)
+            self.elements[c] = Element(rows, order, c)
         self.n = len(self.frm.field.cells) * (order + 1) # number of unknowns
         # Matrices (constants)
         self.mass = None
@@ -49,35 +49,31 @@ class Discretization:
 
     def __mass(self):
         '''Compute the mass matrix
-            M(i, j) = sum_k w_k phii_k phij_k dj_k
+            M(i, j) = sum_k w_k Ni_k Nj_k dj_k
             since the matrix is constant, it is computed once and for all
         '''
         if not self.mass:
             self.mass = []
             for e in self.elements.values():
                 # build
-                m = np.zeros((e.nn, e.nn))
-                for i in range(e.nn):
-                    for j in range(e.nn):
-                        for k in range(e.gauss.n):
-                            m[i, j] += e.gauss.w[k] * e.shape.phi[k][i, 0] * e.shape.phi[k][j, 0] * e.cell.djac[k]
+                m = np.zeros((e.ep.n, e.ep.n))
+                for k in range(e.ip.n):
+                    m += e.ip.w[k] * np.outer(e.eshape.sf[k], e.eshape.sf[k]) * e.cell.djac[k]
                 self.mass.append(np.linalg.inv(m))
         return self.mass
 
     def __stif(self):
         '''Compute the stiffness matrix
-            S(i, j) = sum_k w_k phii_k invj_k dphij_k dj_k
+            S(i, j) = sum_k w_k Ni_k invj_k dNj_k dj_k
             since the matrix is constant, it is computed once and for all
         '''
         if not self.stif:
             self.stif = []
             for e in self.elements.values():
                 # build
-                m = np.zeros((e.nn, e.nn))
-                for i in range(e.nn):
-                    for j in range(e.nn):
-                        for k in range(e.gauss.n):
-                            m[i, j] += e.gauss.w[k] * e.shape.phi[k][i, 0] * e.cell.ijac[k][0, 0] * e.shape.dphi[k][j, 0] * e.cell.djac[k]
+                m = np.zeros((e.ep.n, e.ep.n))
+                for k in range(e.ip.n):
+                    m += e.ip.w[k] * np.outer(e.eshape.sf[k], e.cell.ijac[k] * e.eshape.dsf[k]) * e.cell.djac[k]
                 self.stif.append(m)
         return self.stif
 
@@ -86,20 +82,26 @@ class Discretization:
         '''
         f = {}
         for i in self.frm.field.interfaces:
-            u0 = self.elements[i.neighbors[0]].evalu(i, u) # interpolate u from element evaluation points to interface integration points
+            e0 = self.elements[i.neighbors[0]]
+            u0 = e0.evalu(i, u) # interpolate u from element evaluation points to interface integration points
+            n0 = e0.normal(i)
             if len(i.neighbors) == 1:
                 # TODO use a more general inlet/outlet class (not based on normal sign?)
-                if self.frm.a * i.normal[0] < 0:
-                    u1 = self.frm.bc.eval(i, t) # inlet
+                if self.frm.a * n0[0] < 0:
+                    u1 = self.frm.bc.eval(e0, i, t) # inlet
+                    n1 = np.array([np.sign(self.frm.a) ,0, 0])
                 else:
                     u1 = u0 # outlet
+                    n1 = np.array([-np.sign(self.frm.a) ,0, 0])
             elif len(i.neighbors) == 2:
-                u1 = self.elements[i.neighbors[1]].evalu(i, u)
+                e1 = self.elements[i.neighbors[1]]
+                u1 = e1.evalu(i, u)
+                n1 = e1.normal(i)
             else:
                 raise RuntimeError('Discretization.__nflux() Element must have one or two interfaces!')
             fi = [0.] * len(u0)
             for k in range(len(u0)):
-                fi[k] = self.frm.a * (u0[k] + u1[k]) / 2 - (1 - self.alpha) / 2 * self.frm.a * (u1[k] - u0[k]) * i.normal[0]
+                fi[k] = self.frm.a * (u0[k] + u1[k]) / 2 + (1 - self.alpha) / 2 * np.abs(self.frm.a) * (u0[k] * n0[0] + u1[k] * n1[0])
             f[i] = fi
         return f
 
@@ -108,17 +110,15 @@ class Discretization:
         '''
         f = []
         for e in self.elements.values():
-            fe = np.zeros(e.nn) # flux on element
+            fe = np.zeros(e.ep.n) # flux on element
             for i,b in enumerate(e.cell.boundaries):
-                sign = -1.0 if i == 0 else 1.0 # TODO sign of interface
-                ue = e.evalu(b, u) # u at interface GP
-                nf = nfluxes[b] # fstar at interface GP
-                ne = e.evaln(b) # sf at interface GP
-                w = 1. # weight GP # TODO
-                dj = 1. # jac deter GP # TODO
+                ue = e.evalu(b, u) # u at interface (integration point)
+                nf = nfluxes[b] # fstar at interface (integration point)
+                ne = e.ishape[i].sf # sf at interface (integration point)
+                w = e.ipi[i].w # weight (integration point)
+                nrm = e.inormal[i] # outward normal
                 for k in range(len(ue)):
-                    fe += w * dj * ( (self.frm.a * ue[k] - nf[k] ) * sign ) * ne[k]
-                    #fe += w * dj * ( (self.frm.a * ue[k] - nf[k] ) * i.normal[0] ) * ne[k] # TODO wrong sign....
+                    fe += w[k] * b.djac[k] * ( (self.frm.a * ue[k] - nf[k] ) * nrm[0] ) * ne[k]
             f.append(fe)
         return f
 

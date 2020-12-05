@@ -76,8 +76,8 @@ class GaussLegendre(Quadrature):
     '''
     def __init__(self, order):
         # Sanity check
-        if order < 1:
-            raise RuntimeError('GaussLegendre quadrature rules not defined for order less than 1!')
+        if order < 0:
+            raise RuntimeError('GaussLegendre quadrature rules not defined for order less than 0!')
         Quadrature.__init__(self)
         self.n = order + 1
         # Evaluate roots and weights

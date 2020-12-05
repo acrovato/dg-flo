@@ -21,16 +21,16 @@
 import numpy as np
 
 class Node:
-    def __init__(self, no, pos):
+    def __init__(self, no, x):
         # Node number
         self.no = no
         # Node position
-        if isinstance(pos, list) and len(pos) == 3: # python list
-            self.pos = np.transpose(np.array(pos))
-        elif isinstance(pos, np.ndarray) and pos.shape == (3, 1): # numpy array
-            self.pos = pos
+        if isinstance(x, list) and len(x) == 3: # python list
+            self.x = np.array(x)
+        elif isinstance(x, np.ndarray) and x.shape == (3,): # numpy array
+            self.x = x
         else:
             raise RuntimeError('Node: no default constructor matches the argument list!')
 
     def __str__(self):
-        return 'node #' + str(self.no) + ', position: ' + str(np.transpose(self.pos))
+        return 'node #' + str(self.no) + ', position: ' + str(self.x)

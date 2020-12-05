@@ -40,21 +40,21 @@ def main():
         l = np.zeros((shape.n, len(x)))
         dl = np.zeros((shape.n, len(x)))
         for k in range(len(x)):
-            l[:, k] = np.transpose(shape.phi[k])
-            dl[:, k] = np.transpose(shape.dphi[k])
+            l[:, k] = np.transpose(shape.sf[k])
+            dl[:, k] = shape.dsf[k]
         plt.figure(1)
         for i in range(shape.n):
             plt.plot(x, l[i, :])
             plt.plot(xi[i], 0, 'ko')
         plt.xlabel('x')
-        plt.ylabel('phi_i')
+        plt.ylabel('N_i')
         plt.title('Shape functions of order {:d}'.format(p))
         plt.figure(2)
         for i in range(shape.n):
             plt.plot(x, dl[i, :])
             plt.plot(xi[i], 0, 'ko')
         plt.xlabel('x')
-        plt.ylabel('dphi/dx|_i')
+        plt.ylabel('dN_i/dx')
         plt.title('Shape function derivatives of order {:d}'.format(p))
         plt.show()
 

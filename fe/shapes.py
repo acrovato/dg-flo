@@ -26,8 +26,8 @@ import numpy as np
 class Shapes:
     def __init__(self):
         self.n = 0 # number of sampling points
-        self.phi = [] # shape functions
-        self.dphi = [] # derivatives of shape functions
+        self.sf = [] # shape functions
+        self.dsf = [] # derivatives of shape functions
     def __str__(self):
         raise RuntimeError('Shape function not implemented!')
 
@@ -47,18 +47,18 @@ class Lagrange(Shapes):
         '''Evaluate polynomials at x using interpolation points xi
         '''
         for k in range(len(x)):
-            phi = np.ones((self.n, 1))
+            n = np.ones(self.n)
             for i in range(self.n):
                 for j in range(self.n):
                     if i != j:
-                        phi[i, :] *= (x[k] - xi[j]) / (xi[i] - xi[j])
-            self.phi.append(phi)
+                        n[i] *= (x[k] - xi[j]) / (xi[i] - xi[j])
+            self.sf.append(n)
 
     def __evald(self, x, xi):
         '''Evaluate polynomial derivatives at x using interpolation points xi 
         '''
         for k in range(len(x)):
-            dphi = np.zeros((self.n, 1))
+            dn = np.zeros((1, self.n))
             for i in range(self.n):
                 for j in range(self.n):
                     if i != j:
@@ -66,5 +66,5 @@ class Lagrange(Shapes):
                         for l in range(self.n):
                             if l != i and l != j:
                                 prod *= (x[k] - xi[l]) / (xi[i] - xi[l])
-                        dphi[i, :] += prod
-            self.dphi.append(dphi)
+                        dn[:, i] += prod
+            self.dsf.append(dn)

@@ -17,6 +17,7 @@
 
 ## Computational element
 # Adrien Crovato
+# TODO 1D, need to have specific SF and GP for element dimension
 
 import numpy as np
 from fe.quadrature import GaussLegendre, GaussLegendreLobatto
@@ -24,41 +25,79 @@ from fe.shapes import Lagrange
 
 # Base class
 class Element:
-    def __init__(self, rows, cell, order):
+    def __init__(self, rows, order, cell):
         self.rows = rows # row inidices in global solution vector
-        self.cell = cell # underlying geometric mesh cell
         self.order = order # order of the element
-        self.nn = order + 1 # number of nodes (points where unknowns are evaluated)
-        self.gauss = GaussLegendre(order) # Gauss (integration) points and weights
-        self.shape = Lagrange(self.gauss.x, GaussLegendreLobatto(order).x) # shape functions
-        self.cell.update(self.gauss.x) # update geometric data at Gauss point
+        self.ep = GaussLegendreLobatto(order) # evaluation points (Gauss-Legendre-Lobatto)
+        self.ip = GaussLegendre(order) # integration points and weights (Gauss-Legendre)
+        self.eshape = Lagrange(self.ip.x, self.ep.x) # shape functions at element
+        self.cell = cell # underlying geometric mesh cell
+        self.cell.update(self.ip.x) # update geometric data at integration point
+        self.ipi = [] # integration points and weights at interface
+        self.ishape = [] # shape functions at interface
+        self.inormal = [] # 
+        for b in self.cell.boundaries:
+            self.__map(b) # map integration points to the cell
+            self.__normal(b) # compute outward normals
     def __str__(self):
        return 'DG element of order ' + str(self.order) + ', on ' + str(self.cell)
+
+    def __map(self, interface):
+        '''Map the coordinates of the (interface) integration point from the interface to the cell reference frame
+        '''
+        ip = GaussLegendre(0) # integration points
+        if interface == self.cell.boundaries[0]:
+            ip.x[0] = -1.0
+        elif interface == self.cell.boundaries[1]:
+            ip.x[0] = 1.0
+        else:
+            raise RuntimeError('Element.eval interface not found!')
+        ip.w[0] = 1.0
+        interface.update(ip.x) # update geometric data at integration point
+        self.ipi.append(ip)
+        self.ishape.append(Lagrange(ip.x, self.ep.x))
+
+    def __normal(self, interface):
+        '''Compute normal of interface pointing outward of element
+        '''
+        nrm = interface.normal # "true" normal
+        dcg = interface.cg - self.cell.cg # vector joining cell CG to vertex CG
+        if nrm.dot(dcg) > 0:
+            self.inormal.append(nrm) # normal already points outward
+        elif nrm.dot(dcg) < 0:
+            self.inormal.append(-nrm) # normal points inward
+        else:
+            raise RuntimeError('Element.__normal bad cell shape (centroid on boundary face)!')
 
     def evalu(self, interface, u):
         '''Evaluate solution at integration points of interface
         '''
-        # TODO valid for 1D shape function
-        # TODO valid for 1 integration point (equal to evaluation point)
-        if interface == self.cell.boundaries[0]:
-            return [u[self.rows[0]]]
-        elif interface == self.cell.boundaries[1]:
-            return [u[self.rows[-1]]]
-        else:
+        ui = [] # solution at interface
+        try:
+            i = self.cell.boundaries.index(interface)
+        except:
             raise RuntimeError('Element.eval interface not found!')
+        for k in range(self.ipi[i].n):
+            ui.append(self.ishape[i].sf[k].dot(u[self.rows]))
+        return ui
 
-    def evaln(self, interface):
-        '''Evaluate shape function at integration point of interface
+    def evalx(self, interface = None):
+        '''Compute true coordinates of evaluation points (if interface = None) or of interface integration points
         '''
-        # TODO move to self.shape...
-        # TODO valid for 1D shape function
-        # TODO valid for 1 integration point (equal to evaluation point)
-        if interface == self.cell.boundaries[0]:
-            n = np.zeros(self.order+1)
-            n[0] = 1.
-        elif interface == self.cell.boundaries[1]:
-            n = np.zeros(self.order+1)
-            n[-1] = 1.
+        x = []
+        if interface:
+            try:
+                i = self.cell.boundaries.index(interface)
+            except:
+                raise RuntimeError('Element.eval interface not found!')
+            xp = self.ipi[i].x
         else:
-            raise RuntimeError('Element.eval interface not found!')
-        return [n]
+            xp = self.ep.x
+        for xe in xp:
+            x.append((xe + 1) * (self.cell.nodes[1].x[0] - self.cell.nodes[0].x[0]) / 2 + self.cell.nodes[0].x[0])
+        return x
+
+    def normal(self, interface):
+        '''Get outward normal of interface
+        '''
+        return self.inormal[self.cell.boundaries.index(interface)]

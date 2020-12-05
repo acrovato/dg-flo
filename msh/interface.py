@@ -37,8 +37,13 @@ class Interface:
     def __init__(self, nodes):
         self.no = 0 # interface number
         self.nodes = nodes # list of nodes defining the interface
+        self.cg = np.zeros(3) # interface centroid
+        for n in self.nodes:
+            self.cg += n.x
+        self.cg /= len(nodes)
         self.normal = np.zeros(3) # interface normal
         self.neighbors = [] # list of interface neighbor (left and right) cells
+        self.djac = [] # list of Jacobian determinants (at integration points)
     def __str__(self):
         msg = 'interface #' + str(self.no) + ' (' + str(self.type()) + '), nodes:'
         for n in self.nodes:
@@ -77,6 +82,13 @@ class Vertex(Interface):
     '''
     def __init__(self, nodes):
         Interface.__init__(self, nodes)
+        self.normal = np.array([1., 0., 0.])
 
     def type(self):
         return ITYPE.VRTX
+
+    def update(self, xi):
+        '''Update members depending on the integration points (non-geometric data)
+        '''
+        # For a vertex, Jacobian determinant is unity
+        self.djac = [1.0]

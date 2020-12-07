@@ -18,6 +18,7 @@
 ## Computational element
 # Adrien Crovato
 # TODO 1D, need to have specific SF and GP for element dimension
+# TODO check generality of solution evaluation (evalu) and coordinates evaluation (evalx)
 
 import numpy as np
 from fe.quadrature import GaussLegendre, GaussLegendreLobatto

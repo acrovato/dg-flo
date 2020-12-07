@@ -17,13 +17,7 @@
 
 ## Disretization of the advection equation in one dimension
 # Adrien Crovato
-#
-# TODO list:
-# - Refactor shape functions to eval/interp from GLL nodes to GL integration points on element and interface
-# - Add a method to evaluate real coordinates from reduced coordinates of GLL nodes ("change of frame")
-# - Refactor data structure based on above
-# - Allow to have a general type of flux, not just LF
-# - Optimize and add multi-threading
+# TODO Optimize and add multi-threading
 
 import numpy as np
 from fe.element import Element
@@ -32,9 +26,9 @@ class Discretization:
     '''Build matrices and fluxes corresponding to a DG discretization of the 1D advection equation
         du/dt + a * du/dx = 0
     '''
-    def __init__(self, frm, order, alpha):
+    def __init__(self, frm, order, flux):
         self.frm = frm # formulation
-        self.alpha = alpha # Lax-Friedrich flux alpha TODO replace by type of flux
+        self.flux = flux # flux discretization at interface between two cells
         # Associate an element to each cell of the field
         self.elements = {} # cell to element map
         for i, c in enumerate(self.frm.field.cells):
@@ -77,8 +71,13 @@ class Discretization:
                 self.stif.append(m)
         return self.stif
 
-    def __nflux(self, u, t):
-        '''Compute numerical flux on all interfaces
+    def __flux(self, u):
+        '''Compute the flux corresponding to the advection equation
+        '''
+        return self.frm.a * u
+
+    def __iflux(self, u, t):
+        '''Compute flux on all interfaces
         '''
         f = {}
         for i in self.frm.field.interfaces:
@@ -98,14 +97,14 @@ class Discretization:
                 u1 = e1.evalu(i, u)
                 n1 = e1.normal(i)
             else:
-                raise RuntimeError('Discretization.__nflux() Element must have one or two interfaces!')
+                raise RuntimeError('Discretization.__iflux() Element must have one or two interfaces!')
             fi = [0.] * len(u0)
             for k in range(len(u0)):
-                fi[k] = self.frm.a * (u0[k] + u1[k]) / 2 + (1 - self.alpha) / 2 * np.abs(self.frm.a) * (u0[k] * n0[0] + u1[k] * n1[0])
+                fi[k] = self.flux.eval(self.__flux(u0[k]), self.__flux(u1[k]), np.abs(self.frm.a), u0[k]*n0[0], u1[k]*n1[0])
             f[i] = fi
         return f
 
-    def __flux(self, nfluxes, u):
+    def __eflux(self, nfluxes, u):
         '''Compute flux on all elements
         '''
         f = []
@@ -118,7 +117,7 @@ class Discretization:
                 w = e.ipi[i].w # weight (integration point)
                 nrm = e.inormal[i] # outward normal
                 for k in range(len(ue)):
-                    fe += w[k] * b.djac[k] * ( (self.frm.a * ue[k] - nf[k] ) * nrm[0] ) * ne[k]
+                    fe += w[k] * b.djac[k] * ( (self.__flux(ue[k]) - nf[k] ) * nrm[0] ) * ne[k]
             f.append(fe)
         return f
 
@@ -129,9 +128,9 @@ class Discretization:
         me = self.__mass()
         se = self.__stif()
         # Compte numerical fluxes on all interfaces
-        nfi = self.__nflux(u, t)
+        fi = self.__iflux(u, t)
         # Compute total fluxes on all elements
-        fe = self.__flux(nfi, u)
+        fe = self.__eflux(fi, u)
         # Compute RHS
         rhs = np.zeros(len(u))
         i = 0

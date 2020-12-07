@@ -8,7 +8,7 @@ Adrien Crovato, 2020
 
 ## Features
 dg-flo can solve the
-- [ ] advection equation on a one-dimensional mesh
+- [x] advection equation on a one-dimensional mesh
 - [ ] Burger's equation on a one-dimensional mesh
 - [ ] Euler's equations on one and two-dimension meshes
 

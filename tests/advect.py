@@ -15,15 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Gauss quadrature rules test
+## Advection equation test
 # Adrien Crovato
 #
-# Test the Gaussian quadratures for order 4 (n = 5)
+# Solve the advection equation on a 1D grid
 
 import numpy as np
 import advection.conditions as advc
 import advection.formulation as advf
 import advection.discretization as advd
+import fe.flux as fef
 import num.tintegration as numt
 import utils.lmesh as lmsh
 import utils.testing as tst
@@ -34,8 +35,8 @@ def main(gui):
     a = 3. # advection velocity
     n = 3 # number of elements
     p = 4 # order of discretization
-    alpha = 0. # alpha factor for LF flux (0: full-upwind, 1: central)
-    cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrich-Levy for stability
+    flx = fef.LaxFried(0.) # Lax–Friedrichs flux (0: full-upwind, 1: central)
+    cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrichs-Levy for stability
     # Functions
     def initial(x, t): return 0.0
     def fun(x, t): return np.sin(2*np.pi*(x-a*t)/l*2)
@@ -54,7 +55,7 @@ def main(gui):
     inlet = advc.Dirichlet(fun) # inlet bc
     formul = advf.Formulation(msh, fld, ic, inlet, a)
     # Generate discretization
-    disc = advd.Discretization(formul, p, alpha)
+    disc = advd.Discretization(formul, p, flx)
     # Define time integration method
     tint = numt.Rk2(disc, gui)
     tint.run(dt, tmax)

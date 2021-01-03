@@ -17,14 +17,13 @@
 
 ## Initial and boundary conditions
 # Adrien Crovato
-# TODO these classes should be more general
-
-import numpy as np
+# TODO only homogeneous Neumann for now
 
 class Initial:
     '''Initial condition
     '''
-    def __init__(self, fun):
+    def __init__(self, group, fun):
+        self.group = group # physical group
         self.fun = fun # function(position, time)
     def __str__(self):
         return 'Initial condition'
@@ -33,8 +32,8 @@ class Initial:
         '''Evaluate the initial conditon on the nodes of the elements
         '''
         u = []
-        for c,e in celements.items():
-            xe = e.evalx()
+        for c in self.group.cells:
+            xe = celements[c].evalx()
             for i in range(len(xe)):
                 ue = self.fun(xe[i], 0)
                 u.append(ue)
@@ -43,16 +42,24 @@ class Initial:
 class Dirichlet:
     '''Dirichlet boundary condition
     '''
-    def __init__(self, fun):
+    def __init__(self, group, fun):
+        self.group = group # physical group
         self.fun = fun # function(position, time)
     def __str__(self):
-        return 'Boundary condition'
+        return 'Dirichlet boundary condition'
 
-    def eval(self, element, interface, t):
-        '''Evaluate the dirichlet boundary conditon on the interface
+    def eval(self, x, t):
+        '''Evaluate the dirichlet boundary conditon at given positions and time
         '''
         u = []
-        x = element.evalx(interface)
         for i in range(len(x)):
             u.append(self.fun(x[i], t))
         return u
+
+class Neumann:
+    '''Neumann boundary condition
+    '''
+    def __init__(self, group):
+        self.group = group # physical group
+    def __str__(self):
+        return 'Neumann boundary condition'

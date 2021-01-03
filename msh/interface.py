@@ -52,26 +52,6 @@ class Interface:
         for n in self.neighbors:
             msg += ' #' + str(n.no) + ' (' + str(n.type()) + ')'
         return msg
-    def __hash__(self):
-        '''Assign a unique key to the object
-        '''
-        nsum = 0
-        for n in self.nodes:
-            nsum += n.no
-        return nsum
-    def __eq__(self, other):
-        '''Determine if two interfaces are the same
-        '''
-        cnt = 0
-        # Compare nodes of self to nodes of other
-        for i in range(len(self.nodes)):
-            for n1 in other.nodes:
-                if self.nodes[i] == n1:
-                    cnt += 1
-                    break
-            if cnt != i + 1:
-                return False
-        return True
 
     def type(self):
         return ITYPE.UNK

@@ -15,27 +15,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Flux
+## Numerical flux
 # Adrien Crovato
+# TODO Roe's flux (entropy consistency)
+# TODO normal vector (which ref direction? where is dot product)
 
 # Base class
-class Flux:
-    def __init__(self):
-        pass
+class NFlux:
+    def __init__(self, flux):
+        self.f = flux
     def __str__(self):
         raise RuntimeError('Flux not implemented!')
 
 # Lax–Friedrichs
-class LaxFried(Flux):
+class LaxFried(NFlux):
     '''Lax–Friedrichs flux
     '''
-    def __init__(self, alpha):
-        Flux.__init__(self)
+    def __init__(self, flux, alpha):
+        NFlux.__init__(self, flux)
         self.alpha = alpha # upwind parameter
     def __str__(self):
         return 'Lax–Friedrichs flux (alpha = ' + str(self.alpha) + ')'
 
-    def eval(self, f0, f1, c, nu0, nu1):
+    def eval(self, u0, u1, n0):
         '''Compute the flux at the interface between two cells using the physical fluxes f and the numerical fluxes nu at cell 0 and cell 1
         '''
-        return 0.5 * (f0 + f1) + 0.5 * (1 - self.alpha) * c * (nu0 + nu1)
+        c = 0.5 * abs(self.f.evald(u0) + self.f.evald(u1)) # mean wave speed
+        return 0.5 * (self.f.eval(u0) + self.f.eval(u1)) + 0.5 * (1 - self.alpha) * c * n0 * (u0 - u1)

@@ -25,7 +25,7 @@ import fe.shapes as shp
 class Gui:
     def __init__(self):
         self.c2e = None # cell to element mesh data structure
-        self.fref = None # reference solution
+        self.fref = lambda x, t: 0.0 # (default) reference solution
         self.ns = 25 # number of sampling point per element
 
     def set(self, c2e):

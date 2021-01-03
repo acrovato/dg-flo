@@ -20,6 +20,32 @@
 
 import numpy as np
 
+# Nodes container comparator
+class EqNodes:
+    def __init__(self, nodes):
+        self.nods = nodes
+    def __hash__(self):
+        '''Assign a unique key to the object
+        '''
+        nsum = 0
+        for n in self.nods:
+            nsum += n.no
+        return nsum
+    def __eq__(self, other):
+        '''Determine if two objects are the same
+        '''
+        cnt = 0
+        # Compare nodes of self to nodes of other
+        for i in range(len(self.nods)):
+            for n1 in other.nods:
+                if self.nods[i] == n1:
+                    cnt += 1
+                    break
+            if cnt != i + 1:
+                return False
+        return True
+
+# Node
 class Node:
     def __init__(self, no, x):
         # Node number

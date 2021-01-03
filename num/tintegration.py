@@ -17,6 +17,7 @@
 
 ## Time integration
 # Adrien Crovato
+# TODO RK45 useful (Dormand and Ppince or SSPp159, ref292)?
 
 import time
 import numpy as np
@@ -72,23 +73,27 @@ class BEuler(TimeIntegration):
         return 'Backward Euler method'
 
     def step(self, u, t, dt):
-        '''Compute solution increment at next time step t
+        '''Compute solution increment at next time step t+dt
         '''
         return u + dt * self.disc.compute(u, t)
 
 # Runge-Kutta
-class Rk2(TimeIntegration):
-    '''Runge Kutta
+class Rk4(TimeIntegration):
+    '''Runge Kutta order 4
     '''
     def __init__(self, discretization, gui):
         TimeIntegration.__init__(self, discretization, gui)
     def __str__(self):
-        return 'Runge-Kutta order 2 method'
+        return 'Runge-Kutta order 4 method'
 
     def step(self, u, t, dt):
-        '''Compute solution increment at next time step t
+        '''Compute solution increment at next time step t+dt
         '''
         k1 = self.disc.compute(u, t)
-        v1 = u + dt  *k1
-        k2 = self.disc.compute(v1, t+dt)
-        return 0.5 * (u + v1 + dt*k2)
+        v1 = u + dt/2*k1
+        k2 = self.disc.compute(v1, t+dt/2)
+        v2 = u + dt/2*k2
+        k3 = self.disc.compute(v2, t+dt/2)
+        v3 = u + dt*k3
+        k4 = self.disc.compute(v3, t+dt)
+        return u + dt/6* ( k1+2*k2+2*k3+k4 )

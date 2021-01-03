@@ -36,7 +36,7 @@ class Element:
         self.cell.update(self.ip.x) # update geometric data at integration point
         self.ipi = [] # integration points and weights at interface
         self.ishape = [] # shape functions at interface
-        self.inormal = [] # 
+        self.__inormal = [] # interface normal pointing outward
         for b in self.cell.boundaries:
             self.__map(b) # map integration points to the cell
             self.__normal(b) # compute outward normals
@@ -64,9 +64,9 @@ class Element:
         nrm = interface.normal # "true" normal
         dcg = interface.cg - self.cell.cg # vector joining cell CG to vertex CG
         if nrm.dot(dcg) > 0:
-            self.inormal.append(nrm) # normal already points outward
+            self.__inormal.append(nrm) # normal already points outward
         elif nrm.dot(dcg) < 0:
-            self.inormal.append(-nrm) # normal points inward
+            self.__inormal.append(-nrm) # normal points inward
         else:
             raise RuntimeError('Element.__normal bad cell shape (centroid on boundary face)!')
 
@@ -99,6 +99,6 @@ class Element:
         return x
 
     def normal(self, interface):
-        '''Get outward normal of interface
+        '''Get normal of interface pointing outward element
         '''
-        return self.inormal[self.cell.boundaries.index(interface)]
+        return self.__inormal[self.cell.boundaries.index(interface)]

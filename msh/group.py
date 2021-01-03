@@ -22,7 +22,6 @@ class Group:
     def __init__(self, name, dim):
         self.name = name # name
         self.dim = dim # dimension
-        self.nodes = [] # list of nodes
         self.cells = [] # list of cells
         self.interfaces = [] # list of interfaces
     def __str__(self):
@@ -41,7 +40,6 @@ class Group:
                 ityps[i.type()] += 1
         # Print
         msg = 'Group \"' + self.name + '\"(' + str(self.dim) + 'D) with:\n'
-        msg += '- ' + str(len(self.nodes)) + ' nodes\n'
         msg += '- ' + str(len(self.cells)) + ' cells ( '
         for typ, cnt in ctyps.items():
             msg += str(cnt) + ' ' + str(typ) + ' '
@@ -51,17 +49,3 @@ class Group:
             msg += str(cnt) + ' ' + str(typ) + ' '
         msg += ')'
         return msg
-
-    def update(self, msh):
-        '''Update the list of nodes and interfaces
-        '''
-        # Nodes
-        nods = set()
-        for c in self.cells:
-            for n in c.nodes:
-                if n not in nods:
-                    nods.add(n)
-        self.nodes = list(nods)
-        # Interfaces
-        if self.dim == msh.dim:
-            self.interfaces = msh.interfaces

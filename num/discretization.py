@@ -15,16 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Disretization of the advection equation in one dimension
+## Disretization of a physical problem
 # Adrien Crovato
-# TODO Optimize and add multi-threading
+# TODO extend to multivariable (Euler, shallow water, acoustics, ...)
 
 import numpy as np
 from fe.element import Element
 
 class Discretization:
-    '''Build matrices and fluxes corresponding to a DG discretization of the 1D advection equation
-        du/dt + a * du/dx = 0
+    '''Build matrices and fluxes corresponding to a DG discretization of a given physics
+        dU/dt + dF/dx = 0
     '''
     def __init__(self, frm, order, flux):
         self.frm = frm # formulation
@@ -39,7 +39,7 @@ class Discretization:
         self.mass = None
         self.stif = None
     def __str__(self):
-        return 'Advection discretization'
+        return 'Discretization'
 
     def __mass(self):
         '''Compute the mass matrix
@@ -71,40 +71,43 @@ class Discretization:
                 self.stif.append(m)
         return self.stif
 
-    def __flux(self, u):
-        '''Compute the flux corresponding to the advection equation
-        '''
-        return self.frm.a * u
-
     def __iflux(self, u, t):
         '''Compute flux on all interfaces
         '''
-        f = {}
-        for i in self.frm.field.interfaces:
-            e0 = self.elements[i.neighbors[0]]
-            u0 = e0.evalu(i, u) # interpolate u from element evaluation points to interface integration points
-            n0 = e0.normal(i)
-            if len(i.neighbors) == 1:
-                # TODO use a more general inlet/outlet class (not based on normal sign?)
-                if self.frm.a * n0[0] < 0:
-                    u1 = self.frm.bc.eval(e0, i, t) # inlet
-                    n1 = np.array([np.sign(self.frm.a) ,0, 0])
-                else:
-                    u1 = u0 # outlet
-                    n1 = np.array([-np.sign(self.frm.a) ,0, 0])
-            elif len(i.neighbors) == 2:
-                e1 = self.elements[i.neighbors[1]]
-                u1 = e1.evalu(i, u)
-                n1 = e1.normal(i)
-            else:
-                raise RuntimeError('Discretization.__iflux() Element must have one or two interfaces!')
+        # Return element of one interface
+        def getelem(interface, index):
+            ei = self.elements[interface.neighbors[index]]
+            ui = ei.evalu(interface, u) # interpolate u from element evaluation points to interface integration points
+            ni = ei.normal(interface)
+            return ei, ui, ni
+        # Compute the flux on one interface
+        def getflux(u0, u1, n0):
             fi = [0.] * len(u0)
             for k in range(len(u0)):
-                fi[k] = self.flux.eval(self.__flux(u0[k]), self.__flux(u1[k]), np.abs(self.frm.a), u0[k]*n0[0], u1[k]*n1[0])
-            f[i] = fi
+                fi[k] = self.flux.eval(u0[k], u1[k], n0[0])
+            return fi
+        # Compute all fluxes...
+        f = {}
+        # ... in the field
+        for i in self.frm.field.interfaces:
+            e0, u0, n0 = getelem(i, 0)
+            e1, u1, _ = getelem(i, 1)
+            f[i] = getflux(u0, u1, n0)
+        # ... on Dirichlet BCs
+        for bc in self.frm.dbcs:
+            for i in bc.group.interfaces:
+                e0, u0, n0 = getelem(i, 0)
+                u1 = bc.eval(e0.evalx(i), t)
+                f[i] = getflux(u0, u1, n0)
+        # ... on Neumann BCs
+        for bc in self.frm.nbcs:
+            for i in bc.group.interfaces:
+                e0, u0, n0 = getelem(i, 0)
+                u1 = u0
+                f[i] = getflux(u0, u1, n0)
         return f
 
-    def __eflux(self, nfluxes, u):
+    def __eflux(self, ifluxes, u):
         '''Compute flux on all elements
         '''
         f = []
@@ -112,12 +115,12 @@ class Discretization:
             fe = np.zeros(e.ep.n) # flux on element
             for i,b in enumerate(e.cell.boundaries):
                 ue = e.evalu(b, u) # u at interface (integration point)
-                nf = nfluxes[b] # fstar at interface (integration point)
+                fi = ifluxes[b] # fstar at interface (integration point)
                 ne = e.ishape[i].sf # sf at interface (integration point)
                 w = e.ipi[i].w # weight (integration point)
-                nrm = e.inormal[i] # outward normal
+                nrm = e.normal(b) # outward normal
                 for k in range(len(ue)):
-                    fe += w[k] * b.djac[k] * ( (self.__flux(ue[k]) - nf[k] ) * nrm[0] ) * ne[k]
+                    fe += w[k] * b.djac[k] * ((self.frm.flux.eval(ue[k]) - fi[k]) * nrm[0]) * ne[k]
             f.append(fe)
         return f
 
@@ -127,7 +130,7 @@ class Discretization:
         # Compute mass and stiffness matrices on all elements
         me = self.__mass()
         se = self.__stif()
-        # Compte numerical fluxes on all interfaces
+        # Compte interface fluxes on all interfaces
         fi = self.__iflux(u, t)
         # Compute total fluxes on all elements
         fe = self.__eflux(fi, u)
@@ -136,6 +139,6 @@ class Discretization:
         i = 0
         for e in self.elements.values():
             ue = np.array(u[e.rows])
-            rhs[e.rows] = me[i].dot(-self.frm.a * se[i].dot(ue) + fe[i]) # M^-1 * ( - a * S * u + f)
+            rhs[e.rows] = me[i].dot(-se[i].dot(self.frm.flux.eval(ue)) + fe[i]) # M^-1 * (-S * fp + fn)
             i += 1
         return rhs

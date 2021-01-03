@@ -15,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Advection equation test
+## Burger's equation test
 # Adrien Crovato
 #
-# Solve the advection equation on a 1D grid
+# Solve the Burger's equation on a 1D grid
 
 import numpy as np
 import phys.flux as pfl
@@ -33,31 +33,31 @@ import utils.testing as tst
 def main(gui):
     # Constants
     l = 10 # domain length
-    a = 3. # advection velocity
     n = 3 # number of elements
-    p = 4 # order of discretization
+    p = 5 # order of discretization
+    u1 = 1.0 # in-out velocity
     cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrichs-Levy for stability
     # Functions
-    def initial(x, t): return 0.0
-    def fun(x, t): return np.sin(2*np.pi*(x-a*t)/l*2)
+    def initial(x, t): return -u1 * np.sign(x-l/2) if np.abs(x-l/2) > l/n else -n*u1/l * (x-l/2)
+    def inout(x, t): return -u1 * np.sign(x-l/2)
+    def fun(x, t): return -u1 * np.sign(x-l/2)
     if gui:
         gui.fref = fun
     # Parameters
     dx = l / n # cell length
-    dt = cfl * dx / a # time step
-    tmax = round(l / a, 5) # simulation time (l/a)
+    dt = cfl * dx / abs(u1) # time step
+    tmax = 5.0 # simulation time
 
-    # Generate mesh
+    # Generate mesh and get groups
     msh = lmsh.run(l, n)
     fld = msh.groups[0] # field
     inl = msh.groups[1] # inlet
     oul = msh.groups[2] # outlet
     # Generate formulation
-    pflx = pfl.Advection(a) # physical transport flux
+    pflx = pfl.Burger() # physical Burger's flux
     ic = numc.Initial(fld, initial) # initial condition
-    inlet = [numc.Dirichlet(inl, fun)] # inlet bc
-    outlet = [numc.Neumann(oul)] # outlet bc
-    formul = numf.Formulation(msh, fld, pflx, ic, inlet, outlet)
+    bcs = [numc.Dirichlet(inl, inout), numc.Dirichlet(oul, inout)] # inlet-outlet bc
+    formul = numf.Formulation(msh, fld, pflx, ic, bcs)
     # Generate discretization
     nflx = nfl.LaxFried(pflx, 0.) # Lax–Friedrichs flux (0: full-upwind, 1: central)
     disc = numd.Discretization(formul, p, nflx)

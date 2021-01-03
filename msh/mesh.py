@@ -19,6 +19,7 @@
 # Adrien Crovato
 
 import numpy as np
+from msh.node import EqNodes
 from msh.cell import CTYPE
 from msh.interface import Vertex
 
@@ -28,7 +29,7 @@ class Mesh:
         self.dim = 0 # dimension
         self.nodes = [] # list of nodes
         self.cells = [] # list of cells
-        self.groups= [] # list of groups
+        self.groups = [] # list of groups
         self.interfaces = [] # list of interfaces
 
     def __str__(self):
@@ -52,7 +53,7 @@ class Mesh:
         for typ, cnt in ctyps.items():
             msg += str(cnt) + ' ' + str(typ) + ' '
         msg += ')\n'
-        msg += '- ' + str(len(self.interfaces)) + ' interfaces ('
+        msg += '- ' + str(len(self.interfaces)) + ' interfaces ( '
         for typ, cnt in ityps.items():
             msg += str(cnt) + ' ' + str(typ) + ' '
         msg += ')\n'
@@ -62,48 +63,61 @@ class Mesh:
     def topology(self):
         '''Update the mesh topology using the given nodes and cells
         '''
-        # Sanity checks
+        # Group listing and sanity checks
         if len(self.nodes) == 0 or len(self.cells) == 0:
             raise RuntimeError('Mesh.topology cannot update topology: no nodes or cells in the mesh!')
-        # Update interfaces
-        self.__interfaces()
-        # Update groups
-        cnt = 0
+        fldgroups = []
+        bndgroups = {}
         for g in self.groups:
             if g.dim == self.dim:
-                cnt += 1
-            g.update(self)
-        if cnt != 1:
-            raise RuntimeError('Mesh.topology the mesh should contain only one group having the same dimension as the mesh!')
+                fldgroups.append(g)
+            elif g.dim == self.dim-1:
+                cdict = {}
+                for c in g.cells:
+                    cdict[EqNodes(c.nodes)] = c # dict{EqNodes : Cell}
+                bndgroups[g] = cdict
+            else:
+                raise RuntimeError('Mesh.topology groups must have the same or one dimension less than the mesh!')
+        if len(fldgroups) != 1:
+            raise RuntimeError('Mesh.topology the mesh should contain only one group having the same dimension than the mesh!')
+        if len(bndgroups) == 0:
+            raise RuntimeError('Mesh.topology the mesh should contain at least one group having one dimension less than the mesh!')
+        fldgroup = fldgroups.pop()
+        # Update interfaces
+        self.__interfaces(fldgroup, bndgroups)
 
-    def __interfaces(self):
+    def __interfaces(self, fldgroup, bndgroups):
         '''Create the interfaces between all cells having the mesh dimension
-           TODO consider using same function for all dimensions/types of cell
         '''
-        interfaces = set() # set of interfaces, TODO consider using dict {Interface.__eq__() : Interface()}
+        interfaces = {} # dict{EqNodes : Interface}
         if self.dim == 1:
-            nrm = [-1.0, 1.0]
             for c in self.cells:
                 # Treat only 1D line cells
                 if c.type() != CTYPE.LINE2:
                     continue
-                for i, n in enumerate(c.nodes):
-                    trial = Vertex([n])
-                    # create the interface
-                    if trial not in interfaces:
-                        v = trial
+                for n in c.nodes:
+                    nods = [n] # list of nodes defining the interface
+                    eqnds = EqNodes(nods) # nodes container comparator
+                    # get the interface if it exists...
+                    try:
+                        v = interfaces[eqnds]
+                    # ...or create the interface if it does not
+                    except:
+                        v = Vertex(nods)
                         v.no = len(interfaces) + 1
-                        interfaces.add(v)
-                    # loop until interface is found
-                    else:
-                        it = iter(interfaces)
-                        while True:
-                            v = next(it)
-                            if v == trial:
+                        interfaces[eqnds] = v
+                        # check if the interface is a boundary cell
+                        isbnd = False
+                        for g, gcs in bndgroups.items():
+                            if eqnds in gcs:
+                                g.interfaces.append(v)
+                                isbnd = True
                                 break
+                        if not isbnd:
+                            fldgroup.interfaces.append(v)
                     # link interface and cell
                     v.neighbors.append(c)
                     c.boundaries.append(v)
         else:
             raise RuntimeError('Mesh.__interfaces not implemented for dimensions > 1!')
-        self.interfaces = list(interfaces)
+        self.interfaces = list(interfaces.values())

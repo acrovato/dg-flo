@@ -15,20 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Formulation of the advection equation in one dimension
+## Formulation of a physical problem
 # Adrien Crovato
 
 class Formulation:
-    '''Formulate the 1D advection equation
-        du/dt + a * du/dx = 0
+    '''Formulate a given physics
     '''
-    def __init__(self, msh, fld, ic, bc, a):
-        # Grid
+    def __init__(self, msh, fld, flux, ic, dbcs = [], nbcs = []):
+        # Grid and groups
         self.msh = msh # mesh
         self.field = fld # field
+        # Physical flux
+        self.flux = flux
+        # Conditions
         self.ic = ic # initial condition
-        self.bc = bc # inlet boundary condition
-        # Physics
-        self.a = a # advection velocity
+        self.dbcs = dbcs # Dirichlet boundary condition
+        self.nbcs = nbcs # Neumann boundary condition
     def __str__(self):
-        return 'Advection formulation'
+        return 'Formulation'

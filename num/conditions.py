@@ -20,46 +20,65 @@
 # TODO only homogeneous Neumann for now
 
 class Initial:
-    '''Initial condition
+    '''Initial conditions
     '''
-    def __init__(self, group, fun):
+    def __init__(self, group, funs):
         self.group = group # physical group
-        self.fun = fun # function(position, time)
+        self.funs = funs # list of functions(position, time) for each variable
     def __str__(self):
-        return 'Initial condition'
+        return 'Initial conditions'
 
     def eval(self, celements):
-        '''Evaluate the initial conditon on the nodes of the elements
+        '''Evaluate the initial conditons on the nodes of the elements
         '''
         u = []
         for c in self.group.cells:
             xe = celements[c].evalx()
-            for i in range(len(xe)):
-                ue = self.fun(xe[i], 0)
-                u.append(ue)
+            for j in range(len(self.funs)):
+                for i in range(len(xe)):
+                    u.append(self.funs[j](xe[i], 0))
         return u
+
+class Boundary:
+    '''Boundary conditions
+    '''
+    def __init__(self, group, bcs):
+        self.group = group # physical group
+        self.bcs = bcs # list of boundary conditions for each variable
+    def __str__(self):
+        return 'Boundary conditions'
+
+    def eval(self, x, t, u):
+        '''Evaluate the boundary conditons at given positions and time
+        '''
+        ub = [[] for _ in range(len(x))]
+        for i in range(len(x)):
+            for v in range(len(self.bcs)):
+                ub[i].append(self.bcs[v].eval(x[i], t, u[i][v]))
+        return ub
 
 class Dirichlet:
     '''Dirichlet boundary condition
     '''
-    def __init__(self, group, fun):
-        self.group = group # physical group
+    def __init__(self, fun):
         self.fun = fun # function(position, time)
     def __str__(self):
         return 'Dirichlet boundary condition'
 
-    def eval(self, x, t):
-        '''Evaluate the dirichlet boundary conditon at given positions and time
+    def eval(self, x, t, u):
+        '''Evaluate the Dirichlet boundary conditon at given position and time
         '''
-        u = []
-        for i in range(len(x)):
-            u.append(self.fun(x[i], t))
-        return u
+        return self.fun(x, t)
 
 class Neumann:
     '''Neumann boundary condition
     '''
-    def __init__(self, group):
-        self.group = group # physical group
+    def __init__(self):
+        pass
     def __str__(self):
         return 'Neumann boundary condition'
+
+    def eval(self, x, t, u):
+        '''Evaluate homegeneous Neumann boundary conditon (return solution at current position and time so that the flux is null)
+        '''
+        return u

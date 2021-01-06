@@ -25,7 +25,8 @@ import fe.shapes as shp
 class Gui:
     def __init__(self):
         self.c2e = None # cell to element mesh data structure
-        self.fref = lambda x, t: 0.0 # (default) reference solution
+        self.vars = ['u'] # (default) variable names
+        self.frefs = [lambda x, t: 0.0] # (default) reference solutions
         self.ns = 25 # number of sampling point per element
 
     def set(self, c2e):
@@ -46,27 +47,29 @@ class Gui:
     def update(self, u, t, tmax):
         '''Plot the solution on the mesh
         '''
-        us = [] # solution interpolated at sampling points
-        ur = [] # reference soution at sampling points
-        for i,e in enumerate(self.c2e.values()):
-            ue = [[],[]]
-            for k in range(self.ns):
-                ue[0].append(self.fref(self.xs[i][k], t)) # reference solution
-                ue[1].append(self.sf[i][k].dot(u[e.rows])) # interpolated solution
-            ur.append(ue[0])
-            us.append(ue[1])
+        us = [[] for _ in range(len(self.vars))] # solution interpolated at sampling points
+        ur = [[] for _ in range(len(self.vars))] # reference soution at sampling points
+        for v in range(len(self.vars)):
+            for i,e in enumerate(self.c2e.values()):
+                ue = [[], []]
+                for k in range(self.ns):
+                    ue[0].append(self.frefs[v](self.xs[i][k], t)) # reference solution
+                    ue[1].append(self.sf[i][k].dot(u[e.rows[v]])) # interpolated solution
+                ur[v].append(ue[0])
+                us[v].append(ue[1])
         # Plot
-        plt.figure(1)
-        plt.clf()
-        plt.ylim(-1.5, 1.5)
-        plt.grid(True)
-        for i, e in enumerate(self.c2e.values()):
-            plt.plot(self.xn[i], [0.] * len(self.xn[i]), '-ko', markersize=10)
-            plt.plot(self.xs[i], ur[i], c = 'tab:red', ls = '--', lw = 2)
-            plt.plot(self.xs[i], us[i], c = 'tab:blue', ls = '-', lw = 2)
-            plt.plot(self.x[i], u[e.rows], c = 'tab:blue', ls = '', marker = 'o', markersize=5)
-        plt.xlabel('x')
-        plt.ylabel('u')
-        plt.title('time = {:5.3f} / {:5.3f}'.format(t, tmax))
+        for v in range(len(self.vars)):
+            plt.figure(v)
+            plt.clf()
+            plt.ylim(-1.5, 1.5)
+            plt.grid(True)
+            for i, e in enumerate(self.c2e.values()):
+                plt.plot(self.xn[i], [0.] * len(self.xn[i]), '-ko', markersize=10)
+                plt.plot(self.xs[i], ur[v][i], c = 'tab:red', ls = '--', lw = 2)
+                plt.plot(self.xs[i], us[v][i], c = 'tab:blue', ls = '-', lw = 2)
+                plt.plot(self.x[i], u[e.rows[v]], c = 'tab:blue', ls = '', marker = 'o', markersize=5)
+            plt.xlabel('x')
+            plt.ylabel(self.vars[v])
+            plt.title('time = {:5.3f} / {:5.3f}'.format(t, tmax))
         plt.draw()
         plt.pause(.001)

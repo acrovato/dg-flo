@@ -36,13 +36,15 @@ def main(gui):
     n = 3 # number of elements
     p = 5 # order of discretization
     u1 = 1.0 # in-out velocity
+    v = ['u'] # physical variables
     cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrichs-Levy for stability
     # Functions
     def initial(x, t): return -u1 * np.sign(x-l/2) if np.abs(x-l/2) > l/n else -n*u1/l * (x-l/2)
     def inout(x, t): return -u1 * np.sign(x-l/2)
     def fun(x, t): return -u1 * np.sign(x-l/2)
     if gui:
-        gui.fref = fun
+        gui.vars = v
+        gui.frefs = [fun]
     # Parameters
     dx = l / n # cell length
     dt = cfl * dx / abs(u1) # time step
@@ -55,9 +57,9 @@ def main(gui):
     oul = msh.groups[2] # outlet
     # Generate formulation
     pflx = pfl.Burger() # physical Burger's flux
-    ic = numc.Initial(fld, initial) # initial condition
-    bcs = [numc.Dirichlet(inl, inout), numc.Dirichlet(oul, inout)] # inlet-outlet bc
-    formul = numf.Formulation(msh, fld, pflx, ic, bcs)
+    ic = numc.Initial(fld, [initial]) # initial condition
+    bcs = [numc.Boundary(inl, [numc.Dirichlet(inout)]), numc.Boundary(oul, [numc.Dirichlet(inout)])] # inlet-outlet bc
+    formul = numf.Formulation(msh, fld, len(v), pflx, ic, bcs)
     # Generate discretization
     nflx = nfl.LaxFried(pflx, 0.) # Lax–Friedrichs flux (0: full-upwind, 1: central)
     disc = numd.Discretization(formul, p, nflx)
@@ -72,9 +74,11 @@ def main(gui):
         for i in range(len(xe)):
             ue = fun(xe[i], tmax)
             uexact.append(ue)
-    maxdiff = np.abs(np.max(tint.u - np.array(uexact)))
+    maxdiff = np.max(np.abs(tint.u - np.array(uexact))) # infinite norm
+    normiff = np.linalg.norm(tint.u - np.array(uexact)) # 2-norm
     tests = tst.Tests()
     tests.add(tst.Test('Max(u-u_exact)', maxdiff, 0., 1e-1))
+    tests.add(tst.Test('Norm(u-u_exact)', normiff, 0., 1e-1))
     tests.run()
 
 if __name__=="__main__":

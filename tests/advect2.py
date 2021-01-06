@@ -18,7 +18,7 @@
 ## Advection equation test
 # Adrien Crovato
 #
-# Solve the advection equation on a 1D grid
+# Solve the advection equation (2 variables) on a 1D grid
 
 import numpy as np
 import phys.flux as pfl
@@ -36,14 +36,16 @@ def main(gui):
     a = 3. # advection velocity
     n = 3 # number of elements
     p = 4 # order of discretization
-    v = ['u'] # physical variables
+    v = ['u', 'v'] # physical variables
     cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrichs-Levy for stability
     # Functions
     def initial(x, t): return 0.0
-    def fun(x, t): return np.sin(2*np.pi*(x-a*t)/l*2)
+    def funa(x, t): return np.sin(2*np.pi*(x-a*t)/l*2)
+    def funb(x, t): return np.sin(2*np.pi*(x+a*t)/l*2)
+    funs = [funa, funb]
     if gui:
         gui.vars = v
-        gui.frefs = [fun]
+        gui.frefs = funs
     # Parameters
     dx = l / n # cell length
     dt = cfl * dx / a # time step
@@ -55,10 +57,10 @@ def main(gui):
     inl = msh.groups[1] # inlet
     oul = msh.groups[2] # outlet
     # Generate formulation
-    pflx = pfl.Advection(a) # physical transport flux
-    ic = numc.Initial(fld, [initial]) # initial condition
-    inlet = numc.Boundary(inl, [numc.Dirichlet(fun)]) # inlet bc
-    outlet = numc.Boundary(oul, [numc.Neumann()]) # outlet bc
+    pflx = pfl.Advection2(a, -a) # physical transport flux
+    ic = numc.Initial(fld, [initial, initial]) # initial condition
+    inlet = numc.Boundary(inl, [numc.Dirichlet(funa), numc.Neumann()]) # inlet bc
+    outlet = numc.Boundary(oul, [numc.Neumann(), numc.Dirichlet(funb)]) # outlet bc
     formul = numf.Formulation(msh, fld, len(v), pflx, ic, [inlet, outlet])
     # Generate discretization
     nflx = nfl.LaxFried(pflx, 0.) # Lax–Friedrichs flux (0: full-upwind, 1: central)
@@ -71,14 +73,14 @@ def main(gui):
     uexact = [] # exact solution at element eval point
     for c,e in disc.elements.items():
         xe = e.evalx()
-        for i in range(len(xe)):
-            ue = fun(xe[i], tmax)
-            uexact.append(ue)
+        for j in range(len(v)):
+            for i in range(len(xe)):
+                uexact.append(funs[j](xe[i], tmax))
     maxdiff = np.max(np.abs(tint.u - np.array(uexact))) # infinite norm
     normiff = np.linalg.norm(tint.u - np.array(uexact)) # 2-norm
     tests = tst.Tests()
     tests.add(tst.Test('Max(u-u_exact)', maxdiff, 0., 3e-1))
-    tests.add(tst.Test('Norm(u-u_exact)', normiff, 0., 3e-1))
+    tests.add(tst.Test('Norm(u-u_exact)', normiff, 0., 4e-1))
     tests.run()
 
 if __name__=="__main__":

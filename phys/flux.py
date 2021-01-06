@@ -36,14 +36,40 @@ class Advection(PFlux):
         return 'Advection flux (a = ' + str(self.a) + ')'
 
     def eval(self, u):
-        '''Compute the physical flux
+        '''Compute the physical flux vector
         '''
-        return self.a * u
+        return [self.a * u[0]]
 
     def evald(self, u):
-        '''Compute the physical flux derivative
+        '''Compute the physical flux derivative matrix
         '''
-        return self.a
+        return [[self.a]]
+
+class Advection2(PFlux):
+    '''Advection flux
+    '''
+    def __init__(self, a, b):
+        PFlux.__init__(self)
+        self.a = a # first advection (transport) velocity
+        self.b = b # second advection (transport) velocity
+    def __str__(self):
+        return 'Advection flux (a = ' + str(self.a) + ', b = ' + str(self.b) + ')'
+
+    def eval(self, u):
+        '''Compute the physical flux vector
+        '''
+        f = [0.] * len(u)
+        f[0] = self.a * u[0]
+        f[1] = self.b * u[1]
+        return f
+
+    def evald(self, u):
+        '''Compute the physical flux derivative matrix
+        '''
+        df = [[0.] * len(u) for _ in range(len(u))]
+        df[0][0] = self.a
+        df[1][1] = self.b
+        return df
 
 # Burger's
 class Burger(PFlux):
@@ -55,11 +81,11 @@ class Burger(PFlux):
         return 'Burger\'s flux'
 
     def eval(self, u):
-        '''Compute the physical flux
+        '''Compute the physical flux vector
         '''
-        return 0.5 * u * u
+        return [0.5 * u[0] * u[0]]
 
     def evald(self, u):
-        '''Compute the physical flux derivative
+        '''Compute the physical flux derivative matrix
         '''
-        return u
+        return [[u[0]]]

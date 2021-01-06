@@ -21,15 +21,15 @@
 class Formulation:
     '''Formulate a given physics
     '''
-    def __init__(self, msh, fld, flux, ic, dbcs = [], nbcs = []):
+    def __init__(self, msh, fld, nv, flux, ic, bcs):
         # Grid and groups
         self.msh = msh # mesh
         self.field = fld # field
-        # Physical flux
-        self.flux = flux
+        # Physics
+        self.nv = nv # number of variables (physical unknowns)
+        self.flux = flux # flux
         # Conditions
         self.ic = ic # initial condition
-        self.dbcs = dbcs # Dirichlet boundary condition
-        self.nbcs = nbcs # Neumann boundary condition
+        self.bcs = bcs # list of boundary conditions
     def __str__(self):
         return 'Formulation'

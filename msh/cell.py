@@ -75,15 +75,13 @@ class Line(Cell):
         '''Update members depending on the integration points (non-geometric data)
         '''
         # Compute Jacobian at integration points xi using classical linear shape functions
-        self.jac = [np.zeros((1,1))] * len(xi)
-        self.ijac = [np.zeros((1,1))] * len(xi)
+        self.jac = [np.zeros((1,1)) for _ in range(len(xi))]
+        self.ijac = [None] * len(xi)
         self.djac = [0.] * len(xi)
         dn = Lagrange(xi, [-1, 1]).dsf
         for k in range(len(xi)):
-            jac = np.zeros((1,1))
             for i in range(len(self.nodes)):
-                jac[0,0] += dn[k][0, i] * self.nodes[i].x[0]
-            self.jac[k] = jac
+                self.jac[k][0,0] += dn[k][0, i] * self.nodes[i].x[0]
             self.ijac[k] = np.linalg.inv(self.jac[k]) # inverse: 1/j
             self.djac[k] = np.linalg.det(self.jac[k]) # dtm: j
 

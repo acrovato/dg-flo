@@ -73,13 +73,16 @@ class Element:
     def evalu(self, interface, u):
         '''Evaluate solution at integration points of interface
         '''
-        ui = [] # solution at interface
+        # Find interface index
         try:
             i = self.cell.boundaries.index(interface)
         except:
             raise RuntimeError('Element.eval interface not found!')
+        # Get solution
+        ui = [[] for _ in range(self.ipi[i].n)] # solution at interface
         for k in range(self.ipi[i].n):
-            ui.append(self.ishape[i].sf[k].dot(u[self.rows]))
+            for v in range(len(self.rows)):
+                ui[k].append(self.ishape[i].sf[k].dot(u[self.rows[v]])) # solution at each integration point for each variable
         return ui
 
     def evalx(self, interface = None):

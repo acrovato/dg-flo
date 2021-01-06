@@ -17,7 +17,6 @@
 
 ## Disretization of a physical problem
 # Adrien Crovato
-# TODO extend to multivariable (Euler, shallow water, acoustics, ...)
 
 import numpy as np
 from fe.element import Element
@@ -32,7 +31,9 @@ class Discretization:
         # Associate an element to each cell of the field
         self.elements = {} # cell to element map
         for i, c in enumerate(self.frm.field.cells):
-            rows = list(range(i*(order+1), (i+1)*(order+1))) # unknown rows in global solution list
+            rows = [] # unknown rows in global solution list
+            for j in range(self.frm.nv):
+                rows.append(list(range((j+i*self.frm.nv)*(order+1), (j+1+i*self.frm.nv)*(order+1))))
             self.elements[c] = Element(rows, order, c)
         self.n = len(self.frm.field.cells) * (order + 1) # number of unknowns
         # Matrices (constants)
@@ -53,7 +54,7 @@ class Discretization:
                 m = np.zeros((e.ep.n, e.ep.n))
                 for k in range(e.ip.n):
                     m += e.ip.w[k] * np.outer(e.eshape.sf[k], e.eshape.sf[k]) * e.cell.djac[k]
-                self.mass.append(np.linalg.inv(m))
+                self.mass.append(np.linalg.inv(np.kron(np.eye(self.frm.nv), m)))
         return self.mass
 
     def __stif(self):
@@ -68,7 +69,7 @@ class Discretization:
                 m = np.zeros((e.ep.n, e.ep.n))
                 for k in range(e.ip.n):
                     m += e.ip.w[k] * np.outer(e.eshape.sf[k], e.cell.ijac[k] * e.eshape.dsf[k]) * e.cell.djac[k]
-                self.stif.append(m)
+                self.stif.append(np.kron(np.eye(self.frm.nv), m))
         return self.stif
 
     def __iflux(self, u, t):
@@ -93,17 +94,11 @@ class Discretization:
             e0, u0, n0 = getelem(i, 0)
             e1, u1, _ = getelem(i, 1)
             f[i] = getflux(u0, u1, n0)
-        # ... on Dirichlet BCs
-        for bc in self.frm.dbcs:
+        # ... on the boundaries
+        for bc in self.frm.bcs:
             for i in bc.group.interfaces:
                 e0, u0, n0 = getelem(i, 0)
-                u1 = bc.eval(e0.evalx(i), t)
-                f[i] = getflux(u0, u1, n0)
-        # ... on Neumann BCs
-        for bc in self.frm.nbcs:
-            for i in bc.group.interfaces:
-                e0, u0, n0 = getelem(i, 0)
-                u1 = u0
+                u1 = bc.eval(e0.evalx(i), t, u0)
                 f[i] = getflux(u0, u1, n0)
         return f
 
@@ -112,7 +107,7 @@ class Discretization:
         '''
         f = []
         for e in self.elements.values():
-            fe = np.zeros(e.ep.n) # flux on element
+            fe = [np.zeros(e.ep.n) for _ in range(self.frm.nv)] # flux on element
             for i,b in enumerate(e.cell.boundaries):
                 ue = e.evalu(b, u) # u at interface (integration point)
                 fi = ifluxes[b] # fstar at interface (integration point)
@@ -120,7 +115,9 @@ class Discretization:
                 w = e.ipi[i].w # weight (integration point)
                 nrm = e.normal(b) # outward normal
                 for k in range(len(ue)):
-                    fe += w[k] * b.djac[k] * ((self.frm.flux.eval(ue[k]) - fi[k]) * nrm[0]) * ne[k]
+                    fl = self.frm.flux.eval(ue[k])
+                    for v in range(self.frm.nv):
+                        fe[v] += w[k] * b.djac[k] * ((fl[v] - fi[k][v]) * nrm[0]) * ne[k]
             f.append(fe)
         return f
 
@@ -138,7 +135,9 @@ class Discretization:
         rhs = np.zeros(len(u))
         i = 0
         for e in self.elements.values():
-            ue = np.array(u[e.rows])
-            rhs[e.rows] = me[i].dot(-se[i].dot(self.frm.flux.eval(ue)) + fe[i]) # M^-1 * (-S * fp + fn)
+            ue = []
+            for j in range(self.frm.nv):
+                ue.append(np.array(u[e.rows[j]]))
+            rhs[np.concatenate(e.rows)] = me[i].dot(-se[i].dot(np.concatenate(self.frm.flux.eval(ue))) + np.concatenate(fe[i])) # M^-1 * (-S * fp + fn)
             i += 1
         return rhs

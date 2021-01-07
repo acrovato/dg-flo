@@ -28,6 +28,7 @@ import num.formulation as numf
 import num.discretization as numd
 import num.tintegration as numt
 import utils.lmesh as lmsh
+import utils.writer as wrtr
 import utils.testing as tst
 
 def main(gui):
@@ -64,7 +65,8 @@ def main(gui):
     nflx = nfl.LaxFried(pflx, 0.) # Lax–Friedrichs flux (0: full-upwind, 1: central)
     disc = numd.Discretization(formul, p, nflx)
     # Define time integration method
-    tint = numt.Rk4(disc, gui)
+    wrt = wrtr.Writer('sol', 1, v, disc)
+    tint = numt.Rk4(disc, wrt, gui)
     tint.run(dt, tmax)
 
     # Test
@@ -72,7 +74,7 @@ def main(gui):
     for c,e in disc.elements.items():
         xe = e.evalx()
         for i in range(len(xe)):
-            ue = fun(xe[i], tmax)
+            ue = fun(xe[i], tint.t)
             uexact.append(ue)
     maxdiff = np.max(np.abs(tint.u - np.array(uexact))) # infinite norm
     normiff = np.linalg.norm(tint.u - np.array(uexact)) # 2-norm

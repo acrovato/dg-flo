@@ -15,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Advection equation test
+## Euler equations test
 # Adrien Crovato
 #
-# Solve the advection equation (2 variables) on a 1D grid
+# Solve the Euler equations (Sod's problem) on a 1D grid
 
 import numpy as np
 import phys.flux as pfl
@@ -33,36 +33,36 @@ import utils.testing as tst
 
 def main(gui):
     # Constants
-    l = 10 # domain length
-    a = 3. # advection velocity
-    n = 3 # number of elements
-    p = 4 # order of discretization
-    v = ['u', 'v'] # physical variables
+    l = 1 # domain length
+    n = 11 # number of elements
+    p = 1 # order of discretization
+    gamma = 1.4 # heat capacity ratio
+    v = ['rho', 'rhou', 'E'] # physical variables
     cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrichs-Levy for stability
     # Functions
-    def initial(x, t): return 0.0
-    def funa(x, t): return np.sin(2*np.pi*(x-a*t)/l*2)
-    def funb(x, t): return np.sin(2*np.pi*(x+a*t)/l*2)
-    funs = [funa, funb]
+    def fun0(x, t): return 1. if x < l/2 else 0.125
+    def fun1(x, t): return 0.
+    def fun2(x, t): return 1. / (gamma-1) if x < l/2 else 0.1 / (gamma-1)
+    def fun(x, t): return 0.
     if gui:
         gui.vars = v
-        gui.frefs = funs
+        gui.frefs = [fun, fun, fun]
     # Parameters
     dx = l / n # cell length
-    dt = cfl * dx / a # time step
-    tmax = round(l / a, 5) # simulation time (l/a)
+    dt = cfl * dx / 5 # time step
+    tmax = 0.2 # simulation time
 
-    # Generate mesh
+    # Generate mesh and get groups
     msh = lmsh.run(l, n)
     fld = msh.groups[0] # field
     inl = msh.groups[1] # inlet
     oul = msh.groups[2] # outlet
     # Generate formulation
-    pflx = pfl.Advection2(a, -a) # physical transport flux
-    ic = numc.Initial(fld, [initial, initial]) # initial condition
-    inlet = numc.Boundary(inl, [numc.Dirichlet(funa), numc.Neumann()]) # inlet bc
-    outlet = numc.Boundary(oul, [numc.Neumann(), numc.Dirichlet(funb)]) # outlet bc
-    formul = numf.Formulation(msh, fld, len(v), pflx, ic, [inlet, outlet])
+    pflx = pfl.Euler(gamma) # physical Euler flux
+    ic = numc.Initial(fld, [fun0, fun1, fun2]) # initial condition
+    dbcs = [numc.Dirichlet(fun0), numc.Dirichlet(fun1), numc.Dirichlet(fun2)] # Dirichlet BCs
+    bcs = [numc.Boundary(inl, dbcs), numc.Boundary(oul, dbcs)] # inlet-outlet bc
+    formul = numf.Formulation(msh, fld, len(v), pflx, ic, bcs)
     # Generate discretization
     nflx = nfl.LaxFried(pflx, 0.) # Lax–Friedrichs flux (0: full-upwind, 1: central)
     disc = numd.Discretization(formul, p, nflx)
@@ -72,18 +72,7 @@ def main(gui):
     tint.run(dt, tmax)
 
     # Test
-    uexact = [] # exact solution at element eval point
-    for c,e in disc.elements.items():
-        xe = e.evalx()
-        for j in range(len(v)):
-            for i in range(len(xe)):
-                uexact.append(funs[j](xe[i], tint.t))
-    maxdiff = np.max(np.abs(tint.u - np.array(uexact))) # infinite norm
-    normiff = np.linalg.norm(tint.u - np.array(uexact)) # 2-norm
-    tests = tst.Tests()
-    tests.add(tst.Test('Max(u-u_exact)', maxdiff, 0., 3e-1))
-    tests.add(tst.Test('Norm(u-u_exact)', normiff, 0., 4e-1))
-    tests.run()
+    # TODO EULER
 
 if __name__=="__main__":
     if parse().gui:

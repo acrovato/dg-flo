@@ -28,6 +28,7 @@ import num.formulation as numf
 import num.discretization as numd
 import num.tintegration as numt
 import utils.lmesh as lmsh
+import utils.writer as wrtr
 import utils.testing as tst
 
 def main(gui):
@@ -58,13 +59,15 @@ def main(gui):
     # Generate formulation
     pflx = pfl.Burger() # physical Burger's flux
     ic = numc.Initial(fld, [initial]) # initial condition
-    bcs = [numc.Boundary(inl, [numc.Dirichlet(inout)]), numc.Boundary(oul, [numc.Dirichlet(inout)])] # inlet-outlet bc
+    dbc = [numc.Dirichlet(inout)] # Dirichlet BC
+    bcs = [numc.Boundary(inl, dbc), numc.Boundary(oul, dbc)] # inlet-outlet bc
     formul = numf.Formulation(msh, fld, len(v), pflx, ic, bcs)
     # Generate discretization
     nflx = nfl.LaxFried(pflx, 0.) # Lax–Friedrichs flux (0: full-upwind, 1: central)
     disc = numd.Discretization(formul, p, nflx)
     # Define time integration method
-    tint = numt.Rk4(disc, gui)
+    wrt = wrtr.Writer('sol', 1, v, disc)
+    tint = numt.Rk4(disc, wrt, gui)
     tint.run(dt, tmax)
 
     # Test
@@ -72,7 +75,7 @@ def main(gui):
     for c,e in disc.elements.items():
         xe = e.evalx()
         for i in range(len(xe)):
-            ue = fun(xe[i], tmax)
+            ue = fun(xe[i], tint.t)
             uexact.append(ue)
     maxdiff = np.max(np.abs(tint.u - np.array(uexact))) # infinite norm
     normiff = np.linalg.norm(tint.u - np.array(uexact)) # 2-norm

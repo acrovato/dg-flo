@@ -61,7 +61,6 @@ class Gui:
         for v in range(len(self.vars)):
             plt.figure(v)
             plt.clf()
-            plt.ylim(-1.5, 1.5)
             plt.grid(True)
             for i, e in enumerate(self.c2e.values()):
                 plt.plot(self.xn[i], [0.] * len(self.xn[i]), '-ko', markersize=10)

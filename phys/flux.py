@@ -37,11 +37,13 @@ class Advection(PFlux):
 
     def eval(self, u):
         '''Compute the physical flux vector
+            f = a*u
         '''
         return [self.a * u[0]]
 
     def evald(self, u):
         '''Compute the physical flux derivative matrix
+            df = a
         '''
         return [[self.a]]
 
@@ -57,6 +59,7 @@ class Advection2(PFlux):
 
     def eval(self, u):
         '''Compute the physical flux vector
+            f = [a*u, b*v]
         '''
         f = [0.] * len(u)
         f[0] = self.a * u[0]
@@ -65,6 +68,8 @@ class Advection2(PFlux):
 
     def evald(self, u):
         '''Compute the physical flux derivative matrix
+            df = [a, 0;
+                  0, b]
         '''
         df = [[0.] * len(u) for _ in range(len(u))]
         df[0][0] = self.a
@@ -82,10 +87,70 @@ class Burger(PFlux):
 
     def eval(self, u):
         '''Compute the physical flux vector
+            f = u*u/2
         '''
         return [0.5 * u[0] * u[0]]
 
     def evald(self, u):
         '''Compute the physical flux derivative matrix
+            df = u
         '''
         return [[u[0]]]
+
+# Euler
+class Euler(PFlux):
+    '''Euler flux
+    '''
+    def __init__(self, gamma):
+        PFlux.__init__(self)
+        self.gamma = gamma # heat capacity ratio
+    def __str__(self):
+        return 'Euler flux (gamma = ' + str(self.gamma) + ')'
+
+    def eval(self, u):
+        '''Compute the physical flux vector
+        f = [rho*u, rho*u^2+p, (E+p)*u]
+        '''
+        # Pre-pro
+        u[0] = self.__clamp(u[0], 0.01) # clamp the density
+        v = u[1] / u[0] # u = rho * u / rho
+        p = (self.gamma - 1) * (u[2] - 0.5 * u[1] * v) # (gamma - 1) * (E - 0.5 * rho*u*u)
+        # Flux
+        f = [0.] * len(u)
+        f[0] = u[1]
+        f[1] = u[1] * v + p
+        f[2] = (u[2] + p) * v
+        return f
+
+    def evald(self, u):
+        '''Compute the physical flux derivative matrix
+            df = [0, 1, 0;
+                  (gamma-3)/2*u^2, (3-gamma)*u, gamma-1;
+                  -gamma*E*u/rho + (gamma-1)*u^3, gamma*E/rho + 3*(1-gamma)/2*u^2, gamma*u]
+        '''
+        # Pre-pro
+        u[0] = self.__clamp(u[0], 0.01) # clamp the density
+        v = u[1] / u[0] # = rho * u / rho
+        e = u[2] / u[0] # = E / rho
+        # Flux
+        df = [[0.] * len(u) for _ in range(len(u))]
+        df[0][1] = 1.
+        df[1][0] = 0.5 * (self.gamma - 3) * v * v
+        df[1][1] = (3 - self.gamma) * v
+        df[1][2] = self.gamma - 1
+        df[2][0] = -self.gamma * e * v + (self.gamma - 1) * v * v * v
+        df[2][1] = self.gamma * e + 1.5 * (1 - self.gamma) * v * v
+        df[2][2] = self.gamma * v
+        return df
+
+    def __clamp(self, u, mn):
+        '''Clamp the solution in case in becomes non-physical
+        '''
+        # TODO EULER
+        import numpy as np
+        if isinstance(u, np.ndarray):
+            for i in range(len(u)):
+                u[i] = max([mn, u[i]])
+        else:
+            u = max([mn, u])
+        return u

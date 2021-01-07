@@ -24,8 +24,9 @@ import numpy as np
 
 # Base class
 class TimeIntegration:
-    def __init__(self, discretization, gui):
+    def __init__(self, discretization, writer, gui):
         self.disc = discretization
+        self.writer = writer
         self.gui = gui
     def __str__(self):
         raise RuntimeError('Time Integration method not implemented!')
@@ -44,21 +45,22 @@ class TimeIntegration:
         print('Starting time loop using', self)
         print('{0:>12s}   {1:>12s}'.format('Iter', 'Time'))
         cpu = time.perf_counter()
-        t = 0.
+        self.t = 0.
         it = 0
         while 1:
             # display solution
             if self.gui:
-                self.gui.update(self.u, t, tmax)
+                self.gui.update(self.u, self.t, tmax)
             # check for end of the simulation
-            if t >= tmax:
+            if self.t >= tmax:
                 break
             # update solution
-            self.u = self.step(self.u, t, dt)
-            t += dt
+            self.u = self.step(self.u, self.t, dt)
+            self.t += dt
             it += 1
-            # print
-            print('{0:12d}   {1:12.6f}'.format(it, t))
+            # save and print
+            self.writer.save(it, self.t, self.u)
+            print('{0:12d}   {1:12.6f}'.format(it, self.t))
         cpu = time.perf_counter() - cpu
         print('Computation done! Wall-clock time=', cpu, 's')
 
@@ -67,8 +69,8 @@ class BEuler(TimeIntegration):
     '''Backward (explicit) Euler time integration method
         u(t+dt) = u(t) + dt * rhs(t)
     '''
-    def __init__(self, discretization, gui):
-        TimeIntegration.__init__(self, discretization, gui)
+    def __init__(self, discretization, writer, gui):
+        TimeIntegration.__init__(self, discretization, writer, gui)
     def __str__(self):
         return 'Backward Euler method'
 
@@ -81,8 +83,8 @@ class BEuler(TimeIntegration):
 class Rk4(TimeIntegration):
     '''Runge Kutta order 4
     '''
-    def __init__(self, discretization, gui):
-        TimeIntegration.__init__(self, discretization, gui)
+    def __init__(self, discretization, writer, gui):
+        TimeIntegration.__init__(self, discretization, writer, gui)
     def __str__(self):
         return 'Runge-Kutta order 4 method'
 

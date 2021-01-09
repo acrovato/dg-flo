@@ -40,7 +40,7 @@ class TimeIntegration:
         print('done!')
         # Set data structure for GUI
         if self.gui:
-            self.gui.set(self.disc.elements)
+            self.gui.init(self.disc.elements, self.u)
         # Time loop
         print('Starting time loop using', self)
         print('{0:>12s}   {1:>12s}'.format('Iter', 'Time'))

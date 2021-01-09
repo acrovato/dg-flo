@@ -77,10 +77,10 @@ def main(gui):
             ue = fun(xe[i], tint.t)
             uexact.append(ue)
     maxdiff = np.max(np.abs(tint.u - np.array(uexact))) # infinite norm
-    normiff = np.linalg.norm(tint.u - np.array(uexact)) # 2-norm
+    nrmdiff = np.linalg.norm(tint.u - np.array(uexact)) # Frobenius norm
     tests = tst.Tests()
     tests.add(tst.Test('Max(u-u_exact)', maxdiff, 0., 3e-1))
-    tests.add(tst.Test('Norm(u-u_exact)', normiff, 0., 3e-1))
+    tests.add(tst.Test('Norm(u-u_exact)', nrmdiff, 0., 3e-1))
     tests.run()
 
 if __name__=="__main__":

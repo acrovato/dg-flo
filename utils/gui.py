@@ -29,7 +29,10 @@ class Gui:
         self.frefs = [lambda x, t: 0.0] # (default) reference solutions
         self.ns = 25 # number of sampling point per element
 
-    def set(self, c2e):
+    def init(self, c2e, u):
+        '''Initialize mesh data structure and plot styling
+        '''
+        # Mesh data
         self.c2e = c2e
         self.xn = [] # cell nodes
         self.x = [] # coordinates of element evaluation points
@@ -43,10 +46,25 @@ class Gui:
             self.x.append(e.evalx())
             self.xs.append(np.linspace(c.nodes[0].x[0], c.nodes[1].x[0], self.ns))
             self.sf.append(shp.Lagrange(np.linspace(-1, 1, self.ns), e.ep.x).sf)
+        # Plot initial solution with style
+        self.figs = []
+        plt.ion()
+        for v in range(len(self.vars)):
+            self.figs.append(plt.figure(v))
+            ax = self.figs[v].gca()
+            ax.grid(True)
+            for i, e in enumerate(self.c2e.values()):
+                ax.plot(self.xn[i], [0.] * len(self.xn[i]), '-ko', markersize=10)
+                ax.plot(self.xs[i], [0.] * len(self.xs[i]), c = 'tab:red', ls = '--', lw = 2)
+                ax.plot(self.xs[i], [0.] * len(self.xs[i]), c = 'tab:blue', ls = '-', lw = 2)
+                ax.plot(self.x[i], [0.] * len(self.x[i]), c = 'tab:blue', ls = '', marker = 'o', markersize=5)
+            ax.set_xlabel('x')
+            ax.set_ylabel(self.vars[v])
 
     def update(self, u, t, tmax):
-        '''Plot the solution on the mesh
+        '''Update solution and plot
         '''
+        # Get solution
         us = [[] for _ in range(len(self.vars))] # solution interpolated at sampling points
         ur = [[] for _ in range(len(self.vars))] # reference soution at sampling points
         for v in range(len(self.vars)):
@@ -59,16 +77,15 @@ class Gui:
                 us[v].append(ue[1])
         # Plot
         for v in range(len(self.vars)):
-            plt.figure(v)
-            plt.clf()
-            plt.grid(True)
+            ax = self.figs[v].gca()
+            lines = ax.get_lines()
             for i, e in enumerate(self.c2e.values()):
-                plt.plot(self.xn[i], [0.] * len(self.xn[i]), '-ko', markersize=10)
-                plt.plot(self.xs[i], ur[v][i], c = 'tab:red', ls = '--', lw = 2)
-                plt.plot(self.xs[i], us[v][i], c = 'tab:blue', ls = '-', lw = 2)
-                plt.plot(self.x[i], u[e.rows[v]], c = 'tab:blue', ls = '', marker = 'o', markersize=5)
-            plt.xlabel('x')
-            plt.ylabel(self.vars[v])
-            plt.title('time = {:5.3f} / {:5.3f}'.format(t, tmax))
-        plt.draw()
-        plt.pause(.001)
+                lines[i*4 + 1].set_ydata(ur[v][i])
+                lines[i*4 + 2].set_ydata(us[v][i])
+                lines[i*4 + 3].set_ydata(u[e.rows[v]])
+            maxu = max([max(np.concatenate(ur[v])), max(np.concatenate(us[v]))])
+            minu = min([min(np.concatenate(ur[v])), min(np.concatenate(us[v]))])
+            if minu != maxu: ax.set_ylim(minu*1.05, maxu*1.05)
+            ax.set_title('time = {:5.3f} / {:5.3f}'.format(t, tmax))
+            self.figs[v].canvas.draw()
+            self.figs[v].canvas.flush_events()

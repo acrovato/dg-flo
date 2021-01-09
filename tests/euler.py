@@ -34,8 +34,8 @@ import utils.testing as tst
 def main(gui):
     # Constants
     l = 1 # domain length
-    n = 11 # number of elements
-    p = 1 # order of discretization
+    n = 75 # number of elements
+    p = 2 # order of discretization
     gamma = 1.4 # heat capacity ratio
     v = ['rho', 'rhou', 'E'] # physical variables
     cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrichs-Levy for stability
@@ -43,14 +43,47 @@ def main(gui):
     def fun0(x, t): return 1. if x < l/2 else 0.125
     def fun1(x, t): return 0.
     def fun2(x, t): return 1. / (gamma-1) if x < l/2 else 0.1 / (gamma-1)
-    def fun(x, t): return 0.
+    def rfun0(x, t):
+        if x < 0.381*l:
+            return 1.
+        elif x < 0.489*l:
+            return 15.5391*x*x - 18.7087*x + 5.8748
+        elif x < 0.587*l:
+            return 0.442
+        elif x < 0.665*l:
+            return 0.274
+        else:
+            return 0.125
+    def rfun1(x, t):
+        if x < 0.381*l:
+            return 0.
+        elif x < 0.489*l:
+            return -36.1960*x*x + 35.0524*x - 8.0979
+        elif x < 0.587*l:
+            return 0.394
+        elif x < 0.665*l:
+            return 0.244
+        else:
+            return 0.
+    def rfun2(x, t):
+        if x < 0.381*l:
+            return 2.5
+        elif x < 0.489*l:
+            return 50.3024*x*x - 58.8475*x + 17.6300
+        elif x < 0.587*l:
+            return 0.885
+        elif x < 0.665*l:
+            return 0.831
+        else:
+            return 0.25
+    funs = [rfun0, rfun1, rfun2]
     if gui:
         gui.vars = v
-        gui.frefs = [fun, fun, fun]
+        gui.frefs = funs
     # Parameters
     dx = l / n # cell length
-    dt = cfl * dx / 5 # time step
-    tmax = 0.2 # simulation time
+    dt = cfl * dx / 2 # time step
+    tmax = 0.1 # simulation time
 
     # Generate mesh and get groups
     msh = lmsh.run(l, n)
@@ -72,7 +105,27 @@ def main(gui):
     tint.run(dt, tmax)
 
     # Test
-    # TODO EULER
+    uexact = [[] for _ in range(len(v))] # exact solution at element eval point
+    ucomp = [[] for _ in range(len(v))] # computed solution at element eval point
+    for c,e in disc.elements.items():
+        xe = e.evalx()
+        for j in range(len(v)):
+            for i in range(len(xe)):
+                uexact[j].append(funs[j](xe[i], tint.t))
+                ucomp[j].append(tint.u[e.rows[j][i]])
+    maxdiff = [] # infinite norm
+    nrmdiff = [] # Frobenius norm
+    for j in range(len(v)):
+        maxdiff.append(np.max(np.abs(np.array(ucomp[j]) - np.array(uexact[j]))))
+        nrmdiff.append(np.linalg.norm(np.array(ucomp[j]) - np.array(uexact[j])))
+    tests = tst.Tests()
+    tests.add(tst.Test('Max(rho-rho_exact)', maxdiff[0], 0., 2e-1))
+    tests.add(tst.Test('Norm(rho-rho_exact)', nrmdiff[0], 0., 5e-1))
+    tests.add(tst.Test('Max(rhou-rhou_exact)', maxdiff[1], 0., 4e-1))
+    tests.add(tst.Test('Norm(rhou-rhou_exact)', nrmdiff[1], 0., 5e-1))
+    tests.add(tst.Test('Max(E-E_exact)', maxdiff[2], 0., 9e-1))
+    tests.add(tst.Test('Norm(E-E_exact)', nrmdiff[2], 0., 2e-0))
+    tests.run()
 
 if __name__=="__main__":
     if parse().gui:

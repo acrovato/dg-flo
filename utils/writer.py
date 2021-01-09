@@ -23,8 +23,10 @@ class Writer:
         self.name = name # base name of file
         self.freq = freq # save frequency
         self.vars = _var # list of names of the variables
+        self.rows = [] # list of unknown indices
         self.x = [] # list of coordinates
         for e in disc.elements.values():
+            self.rows.append(e.rows)
             self.x.append(e.evalx())
 
     def save(self, nt, t, u):
@@ -43,14 +45,11 @@ class Writer:
             for v in self.vars:
                 f.write(' {0:>15s}'.format(v))
             f.write('\n')
-            start = 0
             for i in range(len(self.x)):
                 for j in range(len(self.x[i])):
                     f.write('{0:15.6f}'.format(self.x[i][j]))
                     for v in range(len(self.vars)):
-                        index = start + v * len(self.x[i]) + j
-                        f.write(' {0:15.6f}'.format(u[index]))
+                        f.write(' {0:15.6f}'.format(u[self.rows[i][v][j]]))
                     f.write('\n')
-                start += len(self.x[i]) * len(self.vars)
             # Close file
             f.close()

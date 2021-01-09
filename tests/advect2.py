@@ -72,17 +72,24 @@ def main(gui):
     tint.run(dt, tmax)
 
     # Test
-    uexact = [] # exact solution at element eval point
+    uexact = [[] for _ in range(len(v))] # exact solution at element eval point
+    ucomp = [[] for _ in range(len(v))] # computed solution at element eval point
     for c,e in disc.elements.items():
         xe = e.evalx()
         for j in range(len(v)):
             for i in range(len(xe)):
-                uexact.append(funs[j](xe[i], tint.t))
-    maxdiff = np.max(np.abs(tint.u - np.array(uexact))) # infinite norm
-    normiff = np.linalg.norm(tint.u - np.array(uexact)) # 2-norm
+                uexact[j].append(funs[j](xe[i], tint.t))
+                ucomp[j].append(tint.u[e.rows[j][i]])
+    maxdiff = [] # infinite norm
+    nrmdiff = [] # Frobenius norm
+    for j in range(len(v)):
+        maxdiff.append(np.max(np.abs(np.array(ucomp[j]) - np.array(uexact[j]))))
+        nrmdiff.append(np.linalg.norm(np.array(ucomp[j]) - np.array(uexact[j])))
     tests = tst.Tests()
-    tests.add(tst.Test('Max(u-u_exact)', maxdiff, 0., 3e-1))
-    tests.add(tst.Test('Norm(u-u_exact)', normiff, 0., 4e-1))
+    tests.add(tst.Test('Max(u-u_exact)', maxdiff[0], 0., 3e-1))
+    tests.add(tst.Test('Norm(u-u_exact)', nrmdiff[0], 0., 3e-1))
+    tests.add(tst.Test('Max(v-v_exact)', maxdiff[1], 0., 3e-1))
+    tests.add(tst.Test('Norm(v-v_exact)', nrmdiff[1], 0., 3e-1))
     tests.run()
 
 if __name__=="__main__":

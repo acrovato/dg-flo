@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 # test encoding: à-é-è-ô-ï-€
 
-# Copyright 2020 Adrien Crovato
+# Copyright 2021 Adrien Crovato
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 # limitations under the License.
 
 ## @package dg-flo
-#  Discontinuous Galerkin code to solve flow equations
+# Discontinuous Galerkin code to solve hyperbolic PDEs 
 #  Adrien Crovato
 
 class Log:
@@ -95,7 +95,7 @@ def printStart():
     import time, socket
     print('*' * 80)
     print('* dg-flo')
-    print('* Adrien Crovato, 2020')
+    print('* Adrien Crovato, 2021')
     print('* Distributed under Apache license 2.0')
     print('*' * 80)
     print('* Time:', time.strftime('%c'))

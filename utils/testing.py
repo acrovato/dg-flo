@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 # test encoding: à-é-è-ô-ï-€
 
-# Copyright 2020 Adrien Crovato
+# Copyright 2021 Adrien Crovato
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 
 ## Testing utilities
 # Adrien Crovato
-#
-# from https://gitlab.uliege.be/am-dept/waves/blob/master/fwk/testing.py
 
 import utils.coloring as clr
 

@@ -17,7 +17,6 @@
 
 ## Time integration
 # Adrien Crovato
-# TODO RK45 useful (Dormand and Ppince or SSPp159, ref292)?
 
 import time
 import numpy as np
@@ -86,7 +85,7 @@ class Rk4(TimeIntegration):
     def __init__(self, discretization, writer, gui):
         TimeIntegration.__init__(self, discretization, writer, gui)
     def __str__(self):
-        return 'Runge-Kutta order 4 method'
+        return 'Runge Kutta order 4 method'
 
     def step(self, u, t, dt):
         '''Compute solution increment at next time step t+dt
@@ -99,3 +98,25 @@ class Rk4(TimeIntegration):
         v3 = u + dt*k3
         k4 = self.disc.compute(v3, t+dt)
         return u + dt/6* ( k1+2*k2+2*k3+k4 )
+
+class SspRk4(TimeIntegration):
+    '''Strong-Stability-Preserving Runge Kutta order 4
+    '''
+    def __init__(self, discretization, writer, gui):
+        TimeIntegration.__init__(self, discretization, writer, gui)
+    def __str__(self):
+        return 'Strong-Stability-Preserving Runge Kutta order 4 method'
+
+    def step(self, u, t, dt):
+        '''Compute solution increment at next time step t+dt
+        '''
+        k1 = self.disc.compute(u, t)
+        v1 = u + 0.39175222700392*dt*k1
+        k2 = self.disc.compute(v1, t+0.39175222700392*dt)
+        v2 = 0.44437049406734*u + 0.55562950593266*v1 +  0.36841059262959*dt*k2
+        k3 = self.disc.compute(v2, t+0.58607968896780*dt)
+        v3 = 0.62010185138540*u + 0.37989814861460*v2 + 0.25189177424738*dt*k3
+        k4 = self.disc.compute(v3, t+0.47454236302687*dt)
+        v4 = 0.17807995410773*u +  0.82192004589227*v3 + 0.54497475021237*dt*k4
+        k5 = self.disc.compute(v4, t+0.93501063100924*dt)
+        return 0.00683325884039*u + 0.51723167208978*v2 + 0.12759831133288*v3 + 0.34833675773694*v4 + 0.08460416338212*dt*k4 + 0.22600748319395*dt*k5

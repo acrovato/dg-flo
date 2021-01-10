@@ -7,8 +7,8 @@ Adrien Crovato, 2021
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 ## Features
-dg-flo can solve hyperbolic partial differential equations of the form `dU/dt + dF/dx = 0` on one-dimensional meshes, where `U` and `F` are the vectors of unknowns and fluxes.  
-Sample problems are given under the [tests](tests/) directory for solving the:
+dg-flo can solve one-dimensional hyperbolic partial differential equations of the form `dU/dt + dF(U)/dx = 0`, where `U` and `F(U)` are the vectors of unknowns and fluxes.  
+Sample problems are given under the [tests](tests/) directory for solving the
 - [x] advection equation
 - [x] Burger's equation
 - [x] Euler's equations
@@ -33,9 +33,10 @@ python3 -m pip install matplotlib
 ```
 
 ## Usage
-Run a computation by calling `python3 run.py path --gui`, where:
+Run a computation by calling `python3 run.py path --gui`, where
 - `path` is the (required) path to a python script or to a directory contaning several python scripts,
 - `--gui` is an (optional) flag that activates the graphical user interface.
+
 Output files will be saved in your current working directory under a `workspace` directory.
 
 ## Documentation

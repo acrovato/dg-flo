@@ -38,7 +38,7 @@ def main(gui):
     p = 2 # order of discretization
     gamma = 1.4 # heat capacity ratio
     v = ['rho', 'rhou', 'E'] # physical variables
-    cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrichs-Levy for stability
+    cfl = 1 / (2*p+1) # max. Courant-Friedrichs-Levy for stability
     # Functions
     def fun0(x, t): return 1. if x < l/2 else 0.125
     def fun1(x, t): return 0.
@@ -82,7 +82,7 @@ def main(gui):
         gui.frefs = funs
     # Parameters
     dx = l / n # cell length
-    dt = cfl * dx / 2 # time step
+    dt = cfl * dx / 1.0 # time step
     tmax = 0.1 # simulation time
 
     # Generate mesh and get groups
@@ -101,7 +101,7 @@ def main(gui):
     disc = numd.Discretization(formul, p, nflx)
     # Define time integration method
     wrt = wrtr.Writer('sol', 1, v, disc)
-    tint = numt.Rk4(disc, wrt, gui)
+    tint = numt.SspRk4(disc, wrt, gui)
     tint.run(dt, tmax)
 
     # Test

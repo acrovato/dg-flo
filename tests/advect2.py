@@ -38,7 +38,7 @@ def main(gui):
     n = 3 # number of elements
     p = 4 # order of discretization
     v = ['u', 'v'] # physical variables
-    cfl = 0.5 * 1 / (2*p+1) # half of max. Courant-Friedrichs-Levy for stability
+    cfl = 1 / (2*p+1) # max. Courant-Friedrichs-Levy for stability
     # Functions
     def initial(x, t): return 0.0
     def funa(x, t): return np.sin(2*np.pi*(x-a*t)/l*2)
@@ -68,7 +68,7 @@ def main(gui):
     disc = numd.Discretization(formul, p, nflx)
     # Define time integration method
     wrt = wrtr.Writer('sol', 1, v, disc)
-    tint = numt.Rk4(disc, wrt, gui)
+    tint = numt.SspRk4(disc, wrt, gui)
     tint.run(dt, tmax)
 
     # Test

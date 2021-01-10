@@ -42,9 +42,9 @@ class LaxFried(NFlux):
     def eval(self, u0, u1, n0):
         '''Compute the flux at the interface between two cells using the physical fluxes f and the numerical fluxes nu at cell 0 and cell 1
         '''
-        # Compute the average wave speed
+        # Compute the maximum wave speed
         lam0, _ = np.linalg.eig(np.array(self.f.evald(u0))) # eigenvalues of flux derivative matrix
         lam1, _ = np.linalg.eig(np.array(self.f.evald(u1)))
-        c = 0.5 * (max(abs(lam0)) + max(abs(lam1))) # mean wave speed
+        c = max([max(abs(lam0)), max(abs(lam1))]) # max. wave speed
         # Evaluate the numerical flux
         return 0.5 * (np.array(self.f.eval(u0)) + np.array(self.f.eval(u1))) + 0.5 * (1 - self.alpha) * c * n0 * (np.array(u0) - np.array(u1))

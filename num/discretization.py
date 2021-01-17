@@ -23,7 +23,7 @@ from fe.element import Element
 
 class Discretization:
     '''Build matrices and fluxes corresponding to a DG discretization of a given physics
-        dU/dt + dF/dx = 0
+        dU/dt + dF/dx + S = 0
     '''
     def __init__(self, frm, order, flux):
         self.frm = frm # formulation
@@ -61,7 +61,7 @@ class Discretization:
 
     def __stif(self):
         '''Compute the stiffness matrix
-            S(i, j) = sum_k w_k Ni_k invj_k dNj_k dj_k
+            S(i, j) = sum_k w_k (Ni_k invj_k dNj_k)^T dj_k
             since the matrix is constant, it is computed once and for all
         '''
         if not self.stif:
@@ -71,11 +71,11 @@ class Discretization:
                 m = np.zeros((e.ep.n, e.ep.n))
                 for k in range(e.ip.n):
                     m += e.ip.w[k] * np.outer(e.eshape.sf[k], e.cell.ijac[k] * e.eshape.dsf[k]) * e.cell.djac[k]
-                self.stif.append(np.kron(np.eye(self.frm.nv), m))
+                self.stif.append(np.transpose(np.kron(np.eye(self.frm.nv), m)))
         return self.stif
 
-    def __iflux(self, u, t):
-        '''Compute flux on all interfaces
+    def __flux(self, u, t):
+        '''Compute numerical flux on all elements
         '''
         # Return element of one interface
         def getelem(interface, index):
@@ -89,37 +89,31 @@ class Discretization:
             for k in range(len(u0)):
                 fi[k] = self.flux.eval(u0[k], u1[k], n0[0])
             return fi
-        # Compute all fluxes...
-        f = {}
+        # Compute numerical flux on all interfaces...
+        fstar = {}
         # ... in the field
         for i in self.frm.field.interfaces:
             e0, u0, n0 = getelem(i, 0)
             e1, u1, _ = getelem(i, 1)
-            f[i] = getflux(u0, u1, n0)
+            fstar[i] = getflux(u0, u1, n0)
         # ... on the boundaries
         for bc in self.frm.bcs:
             for i in bc.group.interfaces:
                 e0, u0, n0 = getelem(i, 0)
                 u1 = bc.eval(e0.evalx(i), t, u0)
-                f[i] = getflux(u0, u1, n0)
-        return f
-
-    def __eflux(self, ifluxes, u):
-        '''Compute flux on all elements
-        '''
+                fstar[i] = getflux(u0, u1, n0)
+        # Integrate numerical flux on all element interfaces
         f = []
         for e in self.elements.values():
             fe = [np.zeros(e.ep.n) for _ in range(self.frm.nv)] # flux on element
             for i,b in enumerate(e.cell.boundaries):
-                ue = e.evalu(b, u) # u at interface (integration point)
-                fi = ifluxes[b] # fstar at interface (integration point)
+                fi = fstar[b] # fstar at interface (integration point)
                 ne = e.ishape[i].sf # sf at interface (integration point)
                 w = e.ipi[i].w # weight (integration point)
                 nrm = e.normal(b) # outward normal
-                for k in range(len(ue)):
-                    fl = self.frm.flux.eval(ue[k])
+                for k in range(len(ne)):
                     for v in range(self.frm.nv):
-                        fe[v] += w[k] * b.djac[k] * ((fl[v] - fi[k][v]) * nrm[0]) * ne[k]
+                        fe[v] += w[k] * b.djac[k] * (fi[k][v] * nrm[0]) * ne[k]
             f.append(fe)
         return f
 
@@ -138,15 +132,16 @@ class Discretization:
         return self.source
 
     def compute(self, u, t):
-        '''Compute rhs of equation
+        '''Compute RHS of equation
+            dU/dt + dF/dx + S = 0
+            => M * du/dt - S * f + M * s = - f_star
+            => du/dt = M^-1 * (S * f - f_star - M * s)
         '''
         # Compute mass and stiffness matrices on all elements
         me = self.__mass()
         se = self.__stif()
-        # Compte interface fluxes on all interfaces
-        fi = self.__iflux(u, t)
-        # Compute total fluxes on all elements
-        fe = self.__eflux(fi, u)
+        # Compute numerical fluxes on all elements
+        fe = self.__flux(u, t)
         # Compute sources on all elements
         sc = self.__source()
         # Compute RHS
@@ -156,6 +151,6 @@ class Discretization:
             ue = []
             for j in range(self.frm.nv):
                 ue.append(np.array(u[e.rows[j]]))
-            rhs[np.concatenate(e.rows)] = me[i].dot(-se[i].dot(np.concatenate(self.frm.flux.eval(ue))) + np.concatenate(fe[i])) - np.concatenate(sc[i]) # M^-1 * (-S * fp + fn + M * s)
+            rhs[np.concatenate(e.rows)] = me[i].dot(se[i].dot(np.concatenate(self.frm.flux.eval(ue))) - np.concatenate(fe[i])) - np.concatenate(sc[i]) # M^-1 * (S * f - fstar) - s
             i += 1
         return rhs

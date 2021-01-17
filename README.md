@@ -7,12 +7,12 @@ Adrien Crovato, 2021
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 ## Features
-dg-flo can solve one-dimensional hyperbolic partial differential equations of the form `dU/dt + dF(U)/dx = 0`, where `U` and `F(U)` are the vectors of unknowns and fluxes.  
+dg-flo can solve one-dimensional hyperbolic partial differential equations of the form `dU/dt + dF(U)/dx + S(x) = 0`, where `U`, `F(U)` and `S(x)` are the vectors of unknowns, fluxes and sources.  
 Sample problems are given under the [tests](tests/) directory for solving the
 - [x] advection equation
 - [x] Burger's equation
 - [x] Euler's equations
-- [ ] shallow water equations
+- [x] shallow water equations
 
 ## Requirements
 dg-flo needs a python 3 interpreter and its libraries, as well the `numpy` package. The `matplotlib` package is optional (needed to display the solution interactively).

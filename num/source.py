@@ -15,22 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Formulation of a physical problem
+## Source term
 # Adrien Crovato
 
-class Formulation:
-    '''Formulate a given physics
+class Source:
+    '''Source term
     '''
-    def __init__(self, msh, fld, nv, flux, ic, bcs, source = None):
-        # Grid and groups
-        self.msh = msh # mesh
-        self.field = fld # field
-        # Physics
-        self.nv = nv # number of variables (physical unknowns)
-        self.flux = flux # flux
-        self.source = source # source term
-        # Conditions
-        self.ic = ic # initial condition
-        self.bcs = bcs # list of boundary conditions
+    def __init__(self, funs):
+        self.funs = funs # list of functions(position) for each variable
     def __str__(self):
-        return 'Formulation'
+        return 'Source term'
+
+    def eval(self, e):
+        '''Evaluate the source term on the nodes an element
+        '''
+        x = e.evalx()
+        s = [[0.] * len(x) for _ in range(len(self.funs))]
+        for i in range(len(x)):
+            for j in range(len(self.funs)):
+                s[j][i] = self.funs[j](x[i])
+        return s

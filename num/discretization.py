@@ -39,6 +39,8 @@ class Discretization:
         # Matrices (constants)
         self.mass = None
         self.stif = None
+        # Source term (constants)
+        self.source = None
     def __str__(self):
         return 'Discretization'
 
@@ -121,6 +123,20 @@ class Discretization:
             f.append(fe)
         return f
 
+    def __source(self):
+        '''Compute source term on all elements
+            since the term is constant, it is computed once and for all
+        '''
+        if not self.source:
+            self.source = []
+            if self.frm.source:
+                for e in self.elements.values():
+                    self.source.append(self.frm.source.eval(e))
+            else:
+                for e in self.elements.values():
+                    self.source.append([[0.] * len(e.evalx()) for _ in range(self.frm.nv)])
+        return self.source
+
     def compute(self, u, t):
         '''Compute rhs of equation
         '''
@@ -131,6 +147,8 @@ class Discretization:
         fi = self.__iflux(u, t)
         # Compute total fluxes on all elements
         fe = self.__eflux(fi, u)
+        # Compute sources on all elements
+        sc = self.__source()
         # Compute RHS
         rhs = np.zeros(len(u))
         i = 0
@@ -138,6 +156,6 @@ class Discretization:
             ue = []
             for j in range(self.frm.nv):
                 ue.append(np.array(u[e.rows[j]]))
-            rhs[np.concatenate(e.rows)] = me[i].dot(-se[i].dot(np.concatenate(self.frm.flux.eval(ue))) + np.concatenate(fe[i])) # M^-1 * (-S * fp + fn)
+            rhs[np.concatenate(e.rows)] = me[i].dot(-se[i].dot(np.concatenate(self.frm.flux.eval(ue))) + np.concatenate(fe[i])) - np.concatenate(sc[i]) # M^-1 * (-S * fp + fn + M * s)
             i += 1
         return rhs

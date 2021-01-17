@@ -112,7 +112,6 @@ class Euler(PFlux):
         f = [rho*u, rho*u^2+p, (E+p)*u]
         '''
         # Pre-pro
-        u[0] = self.__clamp(u[0], 0.01) # clamp the density
         v = u[1] / u[0] # u = rho * u / rho
         p = (self.gamma - 1) * (u[2] - 0.5 * u[1] * v) # (gamma - 1) * (E - 0.5 * rho*u*u)
         # Flux
@@ -129,7 +128,6 @@ class Euler(PFlux):
                   -gamma*E*u/rho + (gamma-1)*u^3, gamma*E/rho + 3*(1-gamma)/2*u^2, gamma*u]
         '''
         # Pre-pro
-        u[0] = self.__clamp(u[0], 0.01) # clamp the density
         v = u[1] / u[0] # = rho * u / rho
         e = u[2] / u[0] # = E / rho
         # Flux
@@ -143,14 +141,32 @@ class Euler(PFlux):
         df[2][2] = self.gamma * v
         return df
 
-    def __clamp(self, u, mn):
-        '''Clamp the solution in case in becomes non-physical
+class ShallowWater(PFlux):
+    '''Shallow water flux
+    '''
+    def __init__(self, g):
+        PFlux.__init__(self)
+        self.g = g # acceleration due to gravity
+    def __str__(self):
+        return 'Shallow water flux (g = ' + str(self.g) + ')'
+
+    def eval(self, u):
+        '''Compute the physical flux vector
+        f = [h*u, gh + u^2/2]
         '''
-        # TODO EULER
-        import numpy as np
-        if isinstance(u, np.ndarray):
-            for i in range(len(u)):
-                u[i] = max([mn, u[i]])
-        else:
-            u = max([mn, u])
-        return u
+        f = [0.] * len(u)
+        f[0] = u[0] * u[1]
+        f[1] = self.g * u[0] + 0.5 * u[1] * u[1]
+        return f
+
+    def evald(self, u):
+        '''Compute the physical flux derivative matrix
+            df = [u, h;
+                  g, u]
+        '''
+        df = [[0.] * len(u) for _ in range(len(u))]
+        df[0][0] = u[1]
+        df[0][1] = u[0]
+        df[1][0] = self.g
+        df[1][1] = u[1]
+        return df
